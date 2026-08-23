@@ -1,0 +1,70 @@
+# 신화 시드. 계통마다 lore 가 달라서 항목별로 지정한다.
+source: mythology
+lore: 신화
+entries:
+  # 그리스 신화
+  - { word: 제우스, lore: 그리스 신화 }
+  - { word: 헤라, lore: 그리스 신화 }
+  - { word: 포세이돈, lore: 그리스 신화 }
+  - { word: 하데스, lore: 그리스 신화 }
+  - { word: 데메테르, lore: 그리스 신화 }
+  - { word: 아테나, lore: 그리스 신화 }
+  - { word: 아폴론, lore: 그리스 신화 }
+  - { word: 아르테미스, lore: 그리스 신화 }
+  - { word: 아레스, lore: 그리스 신화 }
+  - { word: 아프로디테, lore: 그리스 신화 }
+  - { word: 헤파이스토스, lore: 그리스 신화 }
+  - { word: 헤르메스, lore: 그리스 신화 }
+  - { word: 디오니소스, lore: 그리스 신화 }
+  - { word: 헤스티아, lore: 그리스 신화 }
+  - { word: 크로노스, lore: 그리스 신화 }
+  - { word: 가이아, lore: 그리스 신화 }
+  - { word: 우라노스, lore: 그리스 신화 }
+  - { word: 프로메테우스, lore: 그리스 신화 }
+  - { word: 판도라, lore: 그리스 신화 }
+  - { word: 오디세우스, lore: 그리스 신화 }
+  - { word: 아킬레우스, lore: 그리스 신화 }
+  - { word: 아가멤논, lore: 그리스 신화 }
+  - { word: 헥토르, lore: 그리스 신화 }
+  - { word: 페르세우스, lore: 그리스 신화 }
+  - { word: 헤라클레스, lore: 그리스 신화 }
+  - { word: 테세우스, lore: 그리스 신화 }
+  - { word: 이아손, lore: 그리스 신화 }
+  - { word: 네오프톨레모스, lore: 그리스 신화 }
+  - { word: 키르케, lore: 그리스 신화 }
+  - { word: 칼립소, lore: 그리스 신화 }
+  - { word: 메두사, lore: 그리스 신화 }
+  - { word: 미노타우로스, lore: 그리스 신화 }
+  - { word: 케르베로스, lore: 그리스 신화 }
+  - { word: 이카로스, lore: 그리스 신화 }
+  - { word: 다이달로스, lore: 그리스 신화 }
+  - { word: 타나토스, lore: 그리스 신화 }
+  - { word: 네메시스, lore: 그리스 신화 }
+  # 북유럽 신화
+  - { word: 오딘, lore: 북유럽 신화 }
+  - { word: 토르, lore: 북유럽 신화 }
+  - { word: 로키, lore: 북유럽 신화 }
+  - { word: 프레이야, lore: 북유럽 신화 }
+  - { word: 발드르, lore: 북유럽 신화 }
+  - { word: 헤임달, lore: 북유럽 신화 }
+  - { word: 프리그, lore: 북유럽 신화 }
+  - { word: 펜리르, lore: 북유럽 신화 }
+  - { word: 요르문간드, lore: 북유럽 신화 }
+  - { word: 발키리, lore: 북유럽 신화 }
+  - { word: 라그나로크, lore: 북유럽 신화 }
+  - { word: 아스가르드, lore: 북유럽 신화 }
+  - { word: 미드가르드, lore: 북유럽 신화 }
+  - { word: 이그드라실, lore: 북유럽 신화 }
+  # 이집트 신화
+  - { word: 오시리스, lore: 이집트 신화 }
+  - { word: 이시스, lore: 이집트 신화 }
+  - { word: 호루스, lore: 이집트 신화 }
+  - { word: 아누비스, lore: 이집트 신화 }
+  - { word: 세트, lore: 이집트 신화 }
+  - { word: 토트, lore: 이집트 신화 }
+  - { word: 바스테트, lore: 이집트 신화 }
+  - { word: 세크메트, lore: 이집트 신화 }
+  # 한국 신화
+  - { word: 단군, lore: 한국 신화 }
+  - { word: 환웅, lore: 한국 신화 }
+  - { word: 환인, lore: 한국 신화 }

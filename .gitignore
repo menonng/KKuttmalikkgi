@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# HTTP 응답 캐시와 증분 수집 결과 — 재생성 가능하므로 커밋하지 않는다.
+data/cache/
+
+# 대량 어휘 원본은 저장소 밖에서 관리한다(샘플만 커밋).
+data/corpus/korean-words.tsv
+
+# 빌드 산출물. 배포 파이프라인에서 만들거나 릴리스로 붙인다.
+# 예시 결과물은 examples/ 에 커밋한다.
+data/dist/

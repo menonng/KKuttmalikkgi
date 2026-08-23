@@ -1,0 +1,22 @@
+[
+  {"word":"광개토대왕","normalized":"광개토대왕","first":"광","last":"왕","lore":"고구려의 제19대 왕","sources":["wikipedia"]},
+  {"word":"괴물","normalized":"괴물","first":"괴","last":"물","lore":"영화","sources":["movie"]},
+  {"word":"네오프톨레모스","normalized":"네오프톨레모스","first":"네","last":"스","lore":"그리스 신화","sources":["mythology"]},
+  {"word":"데카라비아","normalized":"데카라비아","first":"데","last":"아","lore":"악마학","sources":["ars_goetia"]},
+  {"word":"륨침대","normalized":"륨침대","first":"륨","last":"대","lore":"주로 알루미늄을 뼈대로 하는 간이 침대.","sources":["korean_dict"]},
+  {"word":"리제로부터시작하는이세계생활","normalized":"리제로부터시작하는이세계생활","first":"리","last":"활","lore":"라이트노벨","sources":["light_novel"]},
+  {"word":"모락스","normalized":"모락스","first":"모","last":"스","lore":"원신, 악마학","sources":["genshin","ars_goetia"]},
+  {"word":"바르바토스","normalized":"바르바토스","first":"바","last":"스","lore":"원신, 악마학","sources":["genshin","ars_goetia"]},
+  {"word":"바엘","normalized":"바엘","first":"바","last":"엘","lore":"악마학","sources":["ars_goetia"]},
+  {"word":"벤티","normalized":"벤티","first":"벤","last":"티","lore":"원신","sources":["genshin"]},
+  {"word":"아나스타샤표도로브나스네즈나야","normalized":"아나스타샤표도로브나스네즈나야","first":"아","last":"야","lore":"가상 인물","sources":["custom"]},
+  {"word":"아스모데우스","normalized":"아스모데우스","first":"아","last":"스","lore":"악마학","sources":["ars_goetia"]},
+  {"word":"안드레알푸스","normalized":"안드레알푸스","first":"안","last":"스","lore":"악마학","sources":["ars_goetia"]},
+  {"word":"오디세우스","normalized":"오디세우스","first":"오","last":"스","lore":"그리스 신화","sources":["mythology"]},
+  {"word":"유메미즈키미즈키","normalized":"유메미즈키미즈키","first":"유","last":"키","lore":"애니메이션, 가상 인물","sources":["anime"]},
+  {"word":"제우스","normalized":"제우스","first":"제","last":"스","lore":"그리스 신화","sources":["mythology"]},
+  {"word":"종려","normalized":"종려","first":"종","last":"려","lore":"원신","sources":["genshin"]},
+  {"word":"키르케","normalized":"키르케","first":"키","last":"케","lore":"그리스 신화","sources":["mythology"]},
+  {"word":"키릴추도미로비치플린스","normalized":"키릴추도미로비치플린스","first":"키","last":"스","lore":"가상 인물","sources":["custom"]},
+  {"word":"헤파이스토스","normalized":"헤파이스토스","first":"헤","last":"스","lore":"그리스 신화","sources":["mythology"]}
+]

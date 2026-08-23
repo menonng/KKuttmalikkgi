@@ -1,0 +1,53 @@
+name: dictionary
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  schedule:
+    # 매주 월요일 03:00 UTC — 온라인 수집으로 사전을 갱신한다.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: 타입체크 · 테스트 · 오프라인 빌드
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run dict:build
+      - name: 산출물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: dictionary-offline
+          path: data/dist/
+
+  refresh:
+    name: 온라인 수집으로 사전 갱신
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: 증분 빌드(온라인)
+        env:
+          KOREAN_DICT_API_KEY: ${{ secrets.KOREAN_DICT_API_KEY }}
+        run: npx tsx src/cli.ts build --online --incremental
+      - run: npx tsx src/cli.ts stats
+      - name: 산출물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: dictionary-online
+          path: data/dist/
+          retention-days: 30

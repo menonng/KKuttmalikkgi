@@ -1,0 +1,38 @@
+{
+  "name": "kkuttmalikkgi-dictionary",
+  "version": "0.1.0",
+  "private": true,
+  "description": "끝말잇기 게임용 사전 데이터베이스 빌더 파이프라인",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./runtime": "./dist/core/store.js"
+  },
+  "bin": {
+    "dictbuild": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dict:build": "tsx src/cli.ts build",
+    "dict:build:online": "tsx src/cli.ts build --online",
+    "dict:stats": "tsx src/cli.ts stats",
+    "dict:lookup": "tsx src/cli.ts lookup",
+    "dict:sources": "tsx src/cli.ts sources",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "dict:example": "tsx scripts/make-example.ts",
+    "bench": "tsx scripts/bench.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}

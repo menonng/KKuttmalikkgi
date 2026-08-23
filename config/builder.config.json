@@ -1,0 +1,118 @@
+{
+  "$comment": "끝말잇기 사전 빌더 설정. 소스 추가/우선순위/검증 임계값을 여기서 관리한다.",
+  "maxLoreLength": 60,
+  "fallbackLore": "일반 어휘",
+  "validation": {
+    "minLength": 2,
+    "maxLength": 40,
+    "allowLatin": false,
+    "allowDigits": true,
+    "requireHangul": true,
+    "requireChainable": true,
+    "blocklist": []
+  },
+  "http": {
+    "userAgent": "KkuttmalikkgiDictionaryBuilder/0.1 (+https://github.com/menonng/kkuttmalikkgi)",
+    "timeoutMs": 15000,
+    "retries": 3,
+    "rateLimitMs": 150,
+    "cacheTtlHours": 168
+  },
+  "paths": {
+    "seeds": "data/seeds",
+    "cache": "data/cache",
+    "dist": "data/dist"
+  },
+  "sources": {
+    "custom": {
+      "enabled": true,
+      "priority": 0
+    },
+    "genshin": {
+      "enabled": true,
+      "priority": 10,
+      "lore": "원신",
+      "options": {
+        "categories": ["캐릭터", "지역", "무기"],
+        "depth": 1,
+        "limit": 2000
+      }
+    },
+    "ars_goetia": {
+      "enabled": true,
+      "priority": 20,
+      "lore": "악마학",
+      "options": {
+        "categories": ["악마"],
+        "depth": 1,
+        "limit": 500
+      }
+    },
+    "mythology": {
+      "enabled": true,
+      "priority": 30,
+      "options": {
+        "categories": [
+          "그리스 신화의 인물",
+          "그리스 신화의 신",
+          "북유럽 신화의 신",
+          "이집트 신화의 신"
+        ],
+        "depth": 2,
+        "limit": 4000
+      }
+    },
+    "anime": {
+      "enabled": true,
+      "priority": 40,
+      "lore": "애니메이션",
+      "options": {
+        "categories": ["애니메이션 등장인물", "만화 등장인물"],
+        "depth": 2,
+        "limit": 5000
+      }
+    },
+    "light_novel": {
+      "enabled": true,
+      "priority": 50,
+      "lore": "라이트노벨",
+      "options": {
+        "categories": ["라이트 노벨"],
+        "depth": 2,
+        "limit": 3000
+      }
+    },
+    "movie": {
+      "enabled": true,
+      "priority": 60,
+      "options": {
+        "categories": ["대한민국의 영화 작품", "한국의 텔레비전 드라마"],
+        "depth": 2,
+        "limit": 5000
+      }
+    },
+    "wikipedia": {
+      "enabled": true,
+      "priority": 80,
+      "options": {
+        "loreMode": "extract",
+        "categories": ["조선의 왕", "고구려의 왕", "국제 기구"],
+        "depth": 1,
+        "limit": 3000
+      }
+    },
+    "korean_dict": {
+      "enabled": true,
+      "priority": 90,
+      "options": {
+        "corpusFiles": [
+          "data/corpus/korean-words.tsv",
+          "data/corpus/korean-words.sample.tsv"
+        ],
+        "apiKeyEnv": "KOREAN_DICT_API_KEY",
+        "queries": [],
+        "perQuery": 1000
+      }
+    }
+  }
+}

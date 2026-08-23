@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>끝말잇기 아레나</title>
+
+<style>
+    :root {
+        --bg: #f4f2ee;
+        --surface: #ffffff;
+        --surface-soft: #f7f6f3;
+        --ink: #1d2327;
+        --muted: #777;
+        --line: #202020;
+        --red: #962b28;
+        --pink: #f0d9e4;
+        --silver: #ededee;
+        --shadow: 0 7px 0 var(--line);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+            "Pretendard",
+            "Noto Sans KR",
+            "Noto Sans",
+            Arial,
+            Helvetica,
+            sans-serif;
+        overflow: hidden;
+    }
+
+    button,
+    input {
+        font: inherit;
+    }
+
+    button {
+        color: inherit;
+    }
+
+    .app {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr) 180px;
+        gap: 24px;
+        padding: 24px;
+    }
+
+    .column {
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .card {
+        background: var(--surface);
+        border: 4px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+    }
+
+    /* =========================================================
+       LEFT COLUMN
+       ========================================================= */
+
+    .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .profile-card {
+        padding: 18px;
+    }
+
+    .avatar {
+        width: 82px;
+        height: 82px;
+        border: 4px solid var(--line);
+        border-radius: 16px;
+        background: var(--silver);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+        overflow: hidden;
+    }
+
+    .profile-name {
+        margin-top: 14px;
+        font-size: 26px;
+        font-weight: 900;
+        letter-spacing: -0.8px;
+    }
+
+    .profile-sub {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .record-card {
+        flex: 1;
+        min-height: 0;
+        padding: 18px;
+    }
+
+    .section-label {
+        margin: 0 0 14px;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .record-empty {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* =========================================================
+       CENTER COLUMN
+       ========================================================= */
+
+    .center-column {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .brand {
+        text-align: center;
+        padding: 0 20px 18px;
+    }
+
+    .brand h1 {
+        margin: 0;
+        font-size: clamp(48px, 5vw, 72px);
+        line-height: 0.95;
+        font-weight: 950;
+        letter-spacing: -3px;
+        white-space: nowrap;
+    }
+
+    .brand p {
+        margin: 12px 0 0;
+        font-size: 15px;
+        color: var(--muted);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+    }
+
+    .featured-card {
+        min-height: 116px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+    }
+
+    .featured-caption {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        text-transform: uppercase;
+    }
+
+    .featured-word {
+        margin-top: 4px;
+        font-size: 32px;
+        font-weight: 950;
+        letter-spacing: -1.2px;
+    }
+
+    .featured-lore {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .main-actions {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .action-card {
+        position: relative;
+        min-height: 260px;
+        padding: 28px;
+        overflow: hidden;
+        cursor: pointer;
+        user-select: none;
+        transition:
+            transform 150ms ease,
+            box-shadow 150ms ease;
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 0 var(--line);
+    }
+
+    .action-card:active {
+        transform: translateY(2px);
+        box-shadow: 0 4px 0 var(--line);
+    }
+
+    .multiplayer {
+        background: var(--red);
+        color: #fff;
+    }
+
+    .ai {
+        background: var(--ink);
+        color: #fff;
+    }
+
+    .action-tag {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        opacity: 0.75;
+    }
+
+    .action-title {
+        margin-top: 18px;
+        font-size: clamp(34px, 3.4vw, 52px);
+        line-height: 0.95;
+        font-weight: 950;
+        letter-spacing: -2px;
+    }
+
+    .action-description {
+        margin-top: 16px;
+        font-size: 15px;
+        opacity: 0.9;
+        max-width: 270px;
+        line-height: 1.5;
+    }
+
+    .action-foot {
+        position: absolute;
+        left: 28px;
+        bottom: 24px;
+        font-size: 13px;
+        opacity: 0.82;
+    }
+
+    /* =========================================================
+       RIGHT COLUMN
+       ========================================================= */
+
+    .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .utility-button {
+        min-height: 56px;
+        padding: 12px 14px;
+        display: grid;
+        place-items: center;
+        border: 4px solid var(--line);
+        border-radius: 15px;
+        background: var(--surface);
+        box-shadow: 0 5px 0 var(--line);
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        transition:
+            transform 120ms ease,
+            box-shadow 120ms ease,
+            background 120ms ease;
+    }
+
+    .utility-button:hover {
+        transform: translateX(-4px);
+    }
+
+    .utility-button:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 var(--line);
+    }
+
+    .utility-spacer {
+        flex: 1;
+    }
+
+    /* =========================================================
+       MODAL SYSTEM
+       ========================================================= */
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(0, 0, 0, 0.38);
+        backdrop-filter: blur(6px);
+    }
+
+    .modal-backdrop.open {
+        display: flex;
+    }
+
+    .modal {
+        width: min(920px, 92vw);
+        max-height: min(780px, 88vh);
+        overflow: auto;
+        padding: 24px;
+        background: var(--surface);
+        border: 4px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 10px 0 var(--line);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 950;
+    }
+
+    .close-button {
+        width: 42px;
+        height: 42px;
+        border: 3px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface-soft);
+        cursor: pointer;
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .modal-grid {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 18px;
+    }
+
+    .modal-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-nav button {
+        padding: 11px 12px;
+        border: 3px solid var(--line);
+        border-radius: 11px;
+        background: var(--surface-soft);
+        cursor: pointer;
+        text-align: left;
+        font-weight: 800;
+    }
+
+    .modal-nav button.active {
+        background: var(--red);
+        color: white;
+    }
+
+    .modal-panel {
+        min-height: 340px;
+        padding: 18px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface-soft);
+    }
+
+    .search-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .search-row input {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: white;
+    }
+
+    .primary-button {
+        padding: 12px 16px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: var(--red);
+        color: white;
+        cursor: pointer;
+        font-weight: 900;
+    }
+
+    .room-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+    }
+
+    .room-button {
+        padding: 18px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .room-button strong {
+        display: block;
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+
+    .setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 0;
+        border-bottom: 1px solid #d5d5d5;
+    }
+
+    .toggle {
+        min-width: 74px;
+        padding: 8px 10px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        cursor: pointer;
+        font-weight: 900;
+    }
+
+    .toggle.on {
+        background: var(--pink);
+    }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+
+    @media (max-width: 1180px) {
+        .app {
+            grid-template-columns: 220px minmax(0, 1fr) 150px;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .brand h1 {
+            font-size: 54px;
+        }
+
+        .action-title {
+            font-size: 36px;
+        }
+    }
+
+    @media (max-width: 900px) {
+        body {
+            overflow: auto;
+        }
+
+        .app {
+            min-height: 100vh;
+            height: auto;
+            grid-template-columns: 1fr;
+        }
+
+        .right-column {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .utility-spacer {
+            display: none;
+        }
+
+        .left-column {
+            order: 2;
+        }
+
+        .center-column {
+            order: 1;
+            min-height: 760px;
+        }
+
+        .right-column {
+            order: 3;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ======================================================
+         LEFT: PROFILE / PLAYER INFORMATION
+         The actual player's stored information should be
+         injected here by the application.
+         ====================================================== -->
+    <aside class="column left-column">
+
+        <section class="card profile-card">
+            <!-- PLACEHOLDER:
+                 Insert the player's saved avatar here.
+                 Do NOT invent a player name or statistics. -->
+            <div class="avatar">프로필</div>
+
+            <!-- PLACEHOLDER:
+                 Insert the actual player's nickname here. -->
+            <div class="profile-name">플레이어 프로필</div>
+
+            <!-- PLACEHOLDER:
+                 Insert a short player status here. -->
+            <div class="profile-sub">로컬 프로필</div>
+        </section>
+
+        <section class="card record-card">
+            <h2 class="section-label">전적</h2>
+
+            <!-- PLACEHOLDER:
+                 Insert actual saved game statistics here.
+                 Example data:
+                 total games, wins, longest word, highest combo.
+                 Leave empty until real account data exists. -->
+            <div class="record-empty">
+                아직 기록된 전적이 없습니다.
+            </div>
+        </section>
+
+    </aside>
+
+    <!-- ======================================================
+         CENTER: PRIMARY GAME ACTIONS
+         ====================================================== -->
+    <main class="column center-column">
+
+        <header class="brand">
+            <!-- UI text is Korean. Keep this main title as-is. -->
+            <h1>끝말잇기 아레나</h1>
+
+            <!-- Keep the subtitle in English exactly as requested. -->
+            <p>Mythic Word Arena</p>
+        </header>
+
+        <section class="card featured-card">
+            <div class="featured-caption">오늘의 단어</div>
+
+            <!-- PLACEHOLDER:
+                 Replace with a dynamically selected dictionary entry. -->
+            <div class="featured-word">헤파이스토스</div>
+
+            <!-- PLACEHOLDER:
+                 Replace with lore from the dictionary. -->
+            <div class="featured-lore">그리스 신화</div>
+        </section>
+
+        <section class="main-actions">
+
+            <button class="card action-card multiplayer" id="multiplayerButton">
+                <div class="action-tag">온라인</div>
+                <div class="action-title">MULTIPLAYER</div>
+                <div class="action-description">
+                    방을 만들거나 다른 플레이어의 방에 참가합니다.
+                </div>
+
+                <!-- PLACEHOLDER:
+                     Insert live player count from the multiplayer server.
+                     Do not hardcode a fake number. -->
+                <div class="action-foot">온라인 플레이</div>
+            </button>
+
+            <button class="card action-card ai" id="aiButton">
+                <div class="action-tag">솔로</div>
+                <div class="action-title">AI MODE</div>
+                <div class="action-description">
+                    AI 상대와 끝말잇기로 겨룹니다.
+                </div>
+
+                <!-- PLACEHOLDER:
+                     Put the selected AI difficulty here when implemented. -->
+                <div class="action-foot">AI 대전</div>
+            </button>
+
+        </section>
+
+    </main>
+
+    <!-- ======================================================
+         RIGHT: SECONDARY / UTILITY ACTIONS
+         ====================================================== -->
+    <aside class="column right-column">
+
+        <button class="utility-button" data-modal="dictionary">
+            사전
+        </button>
+
+        <button class="utility-button" data-modal="tutorial">
+            튜토리얼
+        </button>
+
+        <button class="utility-button" data-modal="profile">
+            프로필
+        </button>
+
+        <button class="utility-button" data-modal="settings">
+            설정
+        </button>
+
+        <button class="utility-button" data-modal="patch">
+            패치 노트
+        </button>
+
+        <div class="utility-spacer"></div>
+
+        <!-- PLACEHOLDER:
+             Reserve this area for future small utility actions,
+             such as Discord / credits / server status. -->
+
+    </aside>
+
+</div>
+
+<!-- ==========================================================
+     MODAL
+     ========================================================== -->
+<div class="modal-backdrop" id="modalBackdrop">
+
+    <section class="modal">
+
+        <header class="modal-header">
+            <h2 class="modal-title" id="modalTitle">창</h2>
+            <button class="close-button" id="closeModal">×</button>
+        </header>
+
+        <div id="modalContent"></div>
+
+    </section>
+
+</div>
+
+<script>
+/* ============================================================
+   MODAL CONTENT
+   The provided reference-window images should eventually be
+   replaced by the real interactive versions in the application.
+   ============================================================ */
+
+const modalTemplates = {
+
+    dictionary: `
+        <div class="modal-grid">
+            <nav class="modal-nav">
+                <button class="active">검색</button>
+                <button>최근 검색</button>
+                <button>즐겨찾기</button>
+            </nav>
+
+            <section class="modal-panel">
+                <div class="search-row">
+                    <input
+                        id="dictionaryInput"
+                        type="text"
+                        placeholder="Search a word..."
+                    >
+                    <button class="primary-button">검색</button>
+                </div>
+
+                <!-- PLACEHOLDER:
+                     Show actual dictionary search results here.
+                     Each result should contain:
+                     word + lore + source information. -->
+                <div style="margin-top:24px;color:#777;">
+                    검색 결과가 여기에 표시됩니다.
+                </div>
+            </section>
+        </div>
+    `,
+
+    tutorial: `
+        <div class="modal-grid">
+            <nav class="modal-nav">
+                <button class="active">기본 규칙</button>
+                <button>점수</button>
+                <button>라운드</button>
+                <button>설정</button>
+            </nav>
+
+            <section class="modal-panel">
+                <!-- PLACEHOLDER:
+                     Insert the tutorial content / reference illustrations here. -->
+                <h3>게임 방법</h3>
+                <p>
+                    앞 단어의 끝 글자로 시작하는 단어를 입력하세요.
+                </p>
+                <p>
+                    잘못된 입력과 시간 초과는 체력을 깎습니다.
+                </p>
+            </section>
+        </div>
+    `,
+
+    profile: `
+        <div class="modal-panel">
+            <!-- PLACEHOLDER:
+                 Replace with the real profile editor.
+                 Data must come from local profile storage. -->
+            <h3>프로필</h3>
+            <p>프로필 정보는 로컬 저장소에서 불러옵니다.</p>
+        </div>
+    `,
+
+    settings: `
+        <div class="modal-panel">
+
+            <div class="setting-row">
+                <div>
+                    <strong>한방단어</strong>
+                    <div style="color:#777;font-size:13px;">
+                        이어갈 단어가 없는 단어를 허용합니다.
+                    </div>
+                </div>
+                <button class="toggle" id="oneshotToggle">꺼짐</button>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>효과음</strong>
+                    <div style="color:#777;font-size:13px;">
+                        게임 효과음을 재생합니다.
+                    </div>
+                </div>
+                <button class="toggle on">켜짐</button>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>애니메이션</strong>
+                    <div style="color:#777;font-size:13px;">
+                        화면 연출 효과를 사용합니다.
+                    </div>
+                </div>
+                <button class="toggle on">ON</button>
+            </div>
+
+            <!-- PLACEHOLDER:
+                 Add additional game settings here. -->
+
+        </div>
+    `,
+
+    patch: `
+        <div class="modal-panel">
+            <!-- PLACEHOLDER:
+                 Replace this static text with actual patch notes. -->
+            <h3>패치 노트</h3>
+            <p>불러온 패치 노트가 없습니다.</p>
+        </div>
+    `
+};
+
+/* ============================================================
+   MULTIPLAYER WINDOW
+   ============================================================ */
+
+function openMultiplayer() {
+    openModal(
+        "MULTIPLAYER",
+        `
+        <div class="room-actions">
+
+            <button class="room-button" id="createRoom">
+                <strong>방 만들기</strong>
+                <span>새 멀티플레이 방을 만듭니다.</span>
+            </button>
+
+            <button class="room-button" id="joinRoom">
+                <strong>방 참가</strong>
+                <span>8자리 방 코드를 입력해 참가합니다.</span>
+            </button>
+
+        </div>
+
+        <!-- PLACEHOLDER:
+             Insert room list / recent rooms / invitations here
+             when the multiplayer backend exists. -->
+        `
+    );
+
+    document.getElementById("createRoom").onclick = () => {
+        openModal(
+            "방 만들기",
+            `
+            <div class="modal-panel">
+                <!-- PLACEHOLDER:
+                     Generate a unique 8-character alphanumeric room
+                     code here. The secret theme must force this code
+                     to 19911018. -->
+                <h3>방 설정</h3>
+                <p>방 코드는 멀티플레이 서버에서 생성됩니다.</p>
+                <button class="primary-button">만들기</button>
+            </div>
+            `
+        );
+    };
+
+    document.getElementById("joinRoom").onclick = () => {
+        openModal(
+            "방 참가",
+            `
+            <div class="modal-panel">
+                <div class="search-row">
+                    <input
+                        maxlength="8"
+                        id="roomCodeInput"
+                        placeholder="ROOM CODE"
+                        autocomplete="off"
+                    >
+                    <button class="primary-button">참가</button>
+                </div>
+                <!-- PLACEHOLDER:
+                     Validate the entered room code against the server. -->
+            </div>
+            `
+        );
+    };
+}
+
+/* ============================================================
+   AI WINDOW
+   ============================================================ */
+
+function openAI() {
+    openModal(
+        "AI MODE",
+        `
+        <div class="modal-panel">
+            <h3>난이도 선택</h3>
+
+            <div class="room-actions">
+                <button class="room-button">
+                    <strong>쉬움</strong>
+                    <span>여유로운 상대.</span>
+                </button>
+
+                <button class="room-button">
+                    <strong>보통</strong>
+                    <span>표준 난이도.</span>
+                </button>
+
+                <button class="room-button">
+                    <strong>어려움</strong>
+                    <span>만만치 않은 상대.</span>
+                </button>
+
+                <button class="room-button">
+                    <strong>광기</strong>
+                    <span>고통을 즐기는 사람용.</span>
+                </button>
+            </div>
+
+            <!-- PLACEHOLDER:
+                 Start the actual AI match here. -->
+        </div>
+        `
+    );
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+
+const backdrop = document.getElementById("modalBackdrop");
+const modalTitle = document.getElementById("modalTitle");
+const modalContent = document.getElementById("modalContent");
+
+function openModal(title, html) {
+    modalTitle.textContent = title;
+    modalContent.innerHTML = html;
+    backdrop.classList.add("open");
+
+    const oneshotToggle = document.getElementById("oneshotToggle");
+
+    if (oneshotToggle) {
+        oneshotToggle.onclick = () => {
+            oneshotToggle.classList.toggle("on");
+            oneshotToggle.textContent =
+                oneshotToggle.classList.contains("on") ? "켜짐" : "꺼짐";
+        };
+    }
+}
+
+function closeModal() {
+    backdrop.classList.remove("open");
+}
+
+document.getElementById("closeModal").addEventListener("click", closeModal);
+
+backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) {
+        closeModal();
+    }
+});
+
+document.querySelectorAll("[data-modal]").forEach((button) => {
+    button.addEventListener("click", () => {
+        const key = button.dataset.modal;
+
+        const titles = {
+            dictionary: "사전",
+            tutorial: "튜토리얼",
+            profile: "프로필",
+            settings: "설정",
+            patch: "패치 노트"
+        };
+
+        openModal(titles[key], modalTemplates[key]);
+    });
+});
+
+document.getElementById("multiplayerButton").addEventListener(
+    "click",
+    openMultiplayer
+);
+
+document.getElementById("aiButton").addEventListener(
+    "click",
+    openAI
+);
+
+/* ============================================================
+   SECRET EASTER EGG
+   Trigger:
+       19911018mafumafu
+
+   Rules:
+   - No notification.
+   - No sound.
+   - Typing the sequence again disables it.
+   - When active, UI colors are replaced.
+   - When active, room creation must use 19911018.
+   ============================================================ */
+
+let easterEggBuffer = "";
+let lastInputTime = 0;
+const easterEggCode = "19911018mafumafu";
+
+document.addEventListener("keydown", (event) => {
+
+    const now = Date.now();
+
+    if (now - lastInputTime > 5000) {
+        easterEggBuffer = "";
+    }
+
+    lastInputTime = now;
+
+    if (event.key.length !== 1) {
+        return;
+    }
+
+    easterEggBuffer += event.key.toLowerCase();
+
+    if (easterEggBuffer.length > easterEggCode.length) {
+        easterEggBuffer =
+            easterEggBuffer.slice(-easterEggCode.length);
+    }
+
+    if (easterEggBuffer === easterEggCode) {
+
+        document.body.classList.toggle("secret");
+
+        // No visible notification.
+        // No audio.
+        // Only the theme state changes.
+
+        easterEggBuffer = "";
+    }
+});
+
+/* ============================================================
+   FUTURE INTEGRATION NOTES
+
+   1. Replace all placeholder player/profile information with
+      actual locally stored profile data.
+
+   2. Replace the Featured Word with a real random dictionary entry.
+
+   3. Connect MULTIPLAYER to the real server.
+
+   4. Connect AI MODE to the AI game engine.
+
+   5. Implement the full dictionary UI.
+
+   6. Add the supplied reference-window layouts to their
+      respective modal panels.
+
+   7. Implement the Word Log as a horizontally scrolling
+      component in the actual gameplay screen.
+
+   8. Use the same CSS variables for the full game UI so the
+      easter-egg theme affects every screen consistently.
+
+   9. The player record must NEVER be fabricated.
+      Empty / unavailable state should be displayed until
+      real local data exists.
+   ============================================================ */
+</script>
+
+</body>
+</html>

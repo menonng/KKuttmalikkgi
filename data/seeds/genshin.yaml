@@ -1,0 +1,65 @@
+# 원신 시드.
+# 온라인 빌드(--online)에서는 팬덤 위키 분류를 추가로 크롤링한다.
+# 여기에는 자동 수집이 놓치기 쉬운 이명/별칭 위주로만 남긴다.
+source: genshin
+lore: 원신
+entries:
+  - word: 벤티
+    aliases: [바르바토스]
+    tags: [character, archon]
+  - word: 종려
+    aliases: [모락스]
+    tags: [character, archon]
+  - word: 라이덴쇼군
+    aliases: [바알, 에이]
+    tags: [character, archon]
+  - word: 나히다
+    aliases: [부에르]
+    tags: [character, archon]
+  - word: 푸리나
+    aliases: [포칼로르]
+    tags: [character, archon]
+  - word: 파이몬
+    tags: [character]
+  - word: 아이테르
+    tags: [character]
+  - word: 루미네
+    tags: [character]
+  - 디루크
+  - 클레
+  - 감우
+  - 각청
+  - 호두
+  - 신학
+  - 야란
+  - 타르탈리아
+  - 알베도
+  - 요이미야
+  - 피슬
+  - 바바라
+  - 케이아
+  - 리사
+  - word: 몬드
+    lore: 원신, 지역
+    tags: [region]
+  - word: 리월
+    lore: 원신, 지역
+    tags: [region]
+  - word: 이나즈마
+    lore: 원신, 지역
+    tags: [region]
+  - word: 수메르
+    lore: 원신, 지역
+    tags: [region]
+  - word: 폰타인
+    lore: 원신, 지역
+    tags: [region]
+  - word: 나타
+    lore: 원신, 지역
+    tags: [region]
+  - word: 스네즈나야
+    lore: 원신, 지역
+    tags: [region]
+  - word: 테이바트
+    lore: 원신, 세계관
+    tags: [region]

@@ -1,0 +1,11 @@
+# 사용자 정의 단어.
+# `npm run dict:lookup` 대신 `npx tsx src/cli.ts add <단어> --lore "<설명>"` 으로 추가된다.
+# 우선순위가 가장 높아(0) 다른 소스와 겹치면 여기 표기/설명이 이긴다.
+source: custom
+entries:
+  - word: 아나스타샤표도로브나스네즈나야
+    lore: 가상 인물
+    tags: [character]
+  - word: 키릴추도미로비치플린스
+    lore: 가상 인물
+    tags: [character]
