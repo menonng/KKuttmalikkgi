@@ -6,6 +6,7 @@
  */
 import type { LookupProvider, ProviderHit } from '../types.js';
 import { normalizeWord } from '../../core/normalize.js';
+import { buildLoreForHeadword, type OpenDictItem } from '../../net/openDictFormat.js';
 
 export interface OpenDictProviderOptions {
   apiKey: string;
@@ -16,11 +17,7 @@ export interface OpenDictProviderOptions {
 
 interface OpenDictResponse {
   channel?: {
-    item?: Array<{
-      word?: string;
-      link?: string;
-      sense?: Array<{ definition?: string }> | { definition?: string };
-    }>;
+    item?: Array<OpenDictItem & { link?: string }>;
   };
 }
 
@@ -56,20 +53,31 @@ export class OpenDictProvider implements LookupProvider {
       return null;
     }
 
+    // method=exact 로 요청했으므로, 응답에 오는 item 들은 전부 이 단어의
+    // 동음이의어 그룹(사전 편찬 상 표기가 같은 별개의 단어들)이다. 표제어에 붙는
+    // 발음/동형어 표시(-, ^)를 걷어내고, 실제로 요청한 단어와 정확히 일치하는
+    // 항목만 모아 "동음이의어면 대표 뜻 3개, 아니면 다의어 뜻 3개"를 적용한다.
+    let headword: string | null = null;
+    let reference: string | undefined;
+    const homonymGroup: OpenDictItem[] = [];
+
     for (const item of data.channel?.item ?? []) {
       if (!item.word) continue;
-      // 표제어에 붙는 발음/동형어 표시를 걷어내고 비교한다.
-      const headword = item.word.replace(/[-^]/gu, '');
-      if (normalizeWord(headword) !== target) continue;
+      const cleaned = item.word.replace(/[-^]/gu, '');
+      if (normalizeWord(cleaned) !== target) continue;
 
-      const senses = Array.isArray(item.sense) ? item.sense : item.sense ? [item.sense] : [];
-      const definition = senses.find((sense) => sense.definition)?.definition;
-      return {
-        title: headword,
-        ...(definition ? { lore: definition } : {}),
-        ...(item.link ? { reference: item.link } : {}),
-      };
+      headword ??= cleaned;
+      reference ??= item.link;
+      homonymGroup.push(item);
     }
-    return null;
+
+    if (!headword) return null;
+
+    const lore = buildLoreForHeadword(homonymGroup);
+    return {
+      title: headword,
+      ...(lore ? { lore } : {}),
+      ...(reference ? { reference } : {}),
+    };
   }
 }

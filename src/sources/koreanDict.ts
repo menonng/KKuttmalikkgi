@@ -16,6 +16,7 @@ import { createInterface } from 'node:readline';
 import path from 'node:path';
 import type { RawEntry } from '../core/types.js';
 import { HttpClient, OfflineError } from '../net/httpCache.js';
+import { buildLoreForHeadword, groupByHeadword, type OpenDictItem } from '../net/openDictFormat.js';
 import { SeedSource } from './seedSource.js';
 import type { SourceContext } from './types.js';
 
@@ -23,10 +24,7 @@ import type { SourceContext } from './types.js';
 interface OpenDictResponse {
   channel?: {
     total?: number;
-    item?: Array<{
-      word?: string;
-      sense?: Array<{ definition?: string; type?: string }> | { definition?: string };
-    }>;
+    item?: OpenDictItem[];
   };
 }
 
@@ -149,14 +147,20 @@ export class KoreanDictSource extends SeedSource {
       const items = data.channel?.item ?? [];
       if (items.length === 0) return;
 
-      for (const item of items) {
-        if (!item.word) continue;
-        const senses = Array.isArray(item.sense) ? item.sense : item.sense ? [item.sense] : [];
-        const definition = senses.find((sense) => sense.definition)?.definition;
+      // 한 페이지 안에 같은 표제어가 동음이의어별로 여러 item 으로 흩어져 오므로,
+      // 표제어 단위로 먼저 묶어야 "동음이의어 대표 뜻 vs 다의어 뜻" 규칙을 적용할 수 있다.
+      // (openDictFormat.ts 의 규칙: 동음이의어가 여럿이면 각 대표 뜻을, 하나뿐이면
+      //  그 안의 뜻을 최대 3개까지 모은다.)
+      // 페이지 경계에서 같은 단어의 동음이의어가 둘로 쪼개지는 극히 드문 경우엔
+      // 그룹핑이 페이지 단위로만 이뤄지지만, 이후 파이프라인의 중복 병합
+      // (DedupeEngine + LoreEngine.merge) 이 같은 단어의 여러 RawEntry 를 다시 합쳐주므로
+      // 완전히 유실되지는 않는다 — 스트리밍 구조를 유지하기 위한 실용적 절충이다.
+      for (const [word, homonymGroup] of groupByHeadword(items)) {
+        const lore = buildLoreForHeadword(homonymGroup);
         yield {
-          word: item.word,
+          word,
           source: this.name,
-          ...(definition ? { lore: definition } : {}),
+          ...(lore ? { lore } : {}),
         };
       }
     }
