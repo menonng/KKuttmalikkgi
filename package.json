@@ -24,13 +24,16 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.check.json",
     "dict:example": "tsx scripts/make-example.ts",
-    "bench": "tsx scripts/bench.ts"
+    "bench": "tsx scripts/bench.ts",
+    "serve": "tsx src/httpServer.ts",
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "yaml": "^2.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
+    "playwright": "^1.62.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vitest": "^2.1.3"

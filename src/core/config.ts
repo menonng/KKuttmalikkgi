@@ -5,6 +5,10 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import type { ValidationConfig } from './validate.js';
+import { DEFAULT_VALIDATION, DEFAULT_MAX_LORE_LENGTH, DEFAULT_FALLBACK_LORE } from './defaults.js';
+
+export type { ValidationConfig } from './validate.js';
 
 export interface SourceConfig {
   /** false 면 수집 자체를 건너뛴다. */
@@ -30,22 +34,6 @@ export interface HttpConfig {
   cacheTtlHours: number;
 }
 
-export interface ValidationConfig {
-  /** 이 길이 미만이면 탈락. 끝말잇기는 보통 2글자 이상. */
-  minLength: number;
-  maxLength: number;
-  /** 라틴 문자를 허용할지. */
-  allowLatin: boolean;
-  /** 숫자를 허용할지. */
-  allowDigits: boolean;
-  /** 한글 음절을 최소 1개 포함해야 하는지. */
-  requireHangul: boolean;
-  /** 첫/끝 글자가 한글이어야 하는지(끝말잇기 연결 가능성). */
-  requireChainable: boolean;
-  /** 완전 차단 단어(정규화 형태로 비교). */
-  blocklist: string[];
-}
-
 export interface BuilderConfig {
   /** lore 최대 길이. 넘으면 잘라내고 말줄임표를 붙인다. */
   maxLoreLength: number;
@@ -62,17 +50,9 @@ export interface BuilderConfig {
 }
 
 export const DEFAULT_CONFIG: BuilderConfig = {
-  maxLoreLength: 60,
-  fallbackLore: '일반 어휘',
-  validation: {
-    minLength: 2,
-    maxLength: 40,
-    allowLatin: true,
-    allowDigits: true,
-    requireHangul: true,
-    requireChainable: true,
-    blocklist: [],
-  },
+  maxLoreLength: DEFAULT_MAX_LORE_LENGTH,
+  fallbackLore: DEFAULT_FALLBACK_LORE,
+  validation: { ...DEFAULT_VALIDATION },
   http: {
     userAgent: 'KkuttmalikkgiDictionaryBuilder/0.1 (+https://github.com/menonng/kkuttmalikkgi)',
     timeoutMs: 15_000,

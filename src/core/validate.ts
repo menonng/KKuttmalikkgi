@@ -5,9 +5,25 @@
  * "정규화 후 중복"은 탈락이 아니라 병합이기 때문이다.
  */
 import type { RejectCode } from './types.js';
-import type { ValidationConfig } from './config.js';
 import { charLength, firstChar, lastChar } from './normalize.js';
 import { hasHangul, isHangulSyllable } from './hangul.js';
+
+/** 검증 임계값. config.ts 와 브라우저 리졸버(src/service/*)가 공유한다. */
+export interface ValidationConfig {
+  /** 이 길이 미만이면 탈락. 끝말잇기는 보통 2글자 이상. */
+  minLength: number;
+  maxLength: number;
+  /** 라틴 문자를 허용할지. */
+  allowLatin: boolean;
+  /** 숫자를 허용할지. */
+  allowDigits: boolean;
+  /** 한글 음절을 최소 1개 포함해야 하는지. */
+  requireHangul: boolean;
+  /** 첫/끝 글자가 한글이어야 하는지(끝말잇기 연결 가능성). */
+  requireChainable: boolean;
+  /** 완전 차단 단어(정규화 형태로 비교). */
+  blocklist: string[];
+}
 
 export type ValidationResult =
   | { ok: true }

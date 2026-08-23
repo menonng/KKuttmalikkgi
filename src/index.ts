@@ -14,6 +14,17 @@ export {
   type SourceConfig,
 } from './core/config.js';
 export { DictionaryStore } from './core/store.js';
+export { DictionaryIndex, type NextCandidateOptions } from './core/dictionaryIndex.js';
+export {
+  turnDurationSeconds,
+  paceSpeedRatio,
+  turnAtFloor,
+  PACE_BASE_SECONDS,
+  PACE_STEP_SECONDS,
+  PACE_MIN_SECONDS,
+  PACE_MAX_SPEED_RATIO,
+} from './game/pace.js';
+export { chooseAiMove, type Difficulty, type AiMoveOptions } from './game/ai.js';
 export { normalizeWord, dedupeKey } from './core/normalize.js';
 export { Validator } from './core/validate.js';
 export { LoreEngine } from './core/lore.js';

@@ -267,6 +267,108 @@ store.isDeadEnd('음악');                  // 한방단어 판정
 
 ---
 
+## 사전 조회 API — 미등록 단어 실시간 검색
+
+빌드된 `dictionary.json` 은 스냅샷일 뿐이다. **플레이어가 사전에 없는 실재하는 단어**
+(방금 나온 애니메이션 캐릭터, 위키백과에는 있지만 아직 시드에 못 넣은 신화 인물 등)를
+입력하면, `DictionaryResolver` 가 그 자리에서 위키 계열 출처를 검색해 실재 여부를 확인한다.
+확인되면 즉시 게임에 쓰이고, 다음 정식 빌드(`--incremental`)에 자연스럽게 편입된다.
+
+```
+빌드된 사전 조회 → (없으면) 조회 캐시 → (없으면) 온라인 프로바이더를 우선순위 순으로 검색
+  genshin(10) → wikipedia(80) → wiktionary(95)   [브라우저]
+  genshin(10) → wikipedia(80) → wiktionary(95) → korean_dict API(90)   [서버, 키가 있을 때]
+```
+
+프로바이더는 **정확히 그 표기의 문서가 존재할 때만** 인정한다(제목 직접 조회 →
+안 되면 검색 후 제목이 정규화 후 정확히 일치하는 것만) — 비슷한 단어로 오탐하지 않는다.
+찾은 문서 요약은 `loreClassifier`가 "그리스 신화", "원신", "악마학" 같은 짧은 태그로
+자동 분류하고(실패하면 요약 원문을 그대로 lore 로 쓴다), 여러 소스가 동시에 확인하면
+기존 병합 규칙 그대로 `lore`/`sources` 가 합쳐진다.
+
+### 브라우저에서 (GitHub Pages, 번들러 없이)
+
+`dist/service/browser.js` 는 순수 ESM이고 `node:` 의존이 전혀 없어서 정적 페이지에서
+`<script>` 없이 `import()` 로 바로 로드된다 — 이 저장소의 `web/index.html` DICTIONARY
+창이 실제로 이렇게 동작한다.
+
+```html
+<script>
+  const { createBrowserResolver } = await import('./dist/service/browser.js');
+  const { resolver, dictionary } = await createBrowserResolver({
+    dictionaryUrl: './data/dictionary.json',
+  });
+
+  const result = await resolver.resolve('페르세포네');
+  // { status: 'resolved', entry: { word: '페르세포네', lore: '그리스 신화', sources: ['wikipedia'] }, origin: 'online' }
+</script>
+```
+
+- `resolve()` 는 `known`(빌드된 사전) / `resolved`(온라인 확인) / `unknown`(어디에도 없음) /
+  `invalid`(형식 위반, 네트워크를 아예 타지 않음) 중 하나를 돌려준다.
+- 결과는 `BrowserResolutionCache` 로 `localStorage` 에 캐시된다(긍정 24h, 부정 1h TTL).
+- 국어사전 오픈 API 는 키가 필요해 브라우저에는 포함하지 않는다 — 일반 어휘의 최종
+  폴백은 한국어 위키낱말사전이 담당한다.
+
+### 서버에서 (Node, 국어사전 API 포함)
+
+```bash
+export KOREAN_DICT_API_KEY=발급받은_키   # 선택 — 있으면 일반 어휘 판정이 보강된다
+npm run serve                          # http://localhost:8787
+```
+
+```
+GET  /api/lookup?word=벤티              단어 존재 판정 (+ lore/sources)
+POST /api/validate-turn                 { "word": "...", "previous": "...", "used": [...] }
+GET  /api/dictionary                    dictionary.json 그대로 서빙
+```
+
+`validateTurn()` 은 존재 여부 + 중복 사용 + (두음법칙을 반영한) 앞 단어와의 연결까지
+한 번에 판정한다 — 게임 서버가 한 턴을 승인/거절할 때 그대로 쓰면 된다.
+
+### 단어 검증 규칙 (요약)
+
+| 판정 | 조건 |
+| --- | --- |
+| `invalid` | 정규화 후 형식 검증 실패(빈 값/너무 짧음/허용 안 되는 문자 등) — 네트워크 안 탐 |
+| `known` | 빌드된 `dictionary.json` 에 있음 |
+| `resolved` | 사전엔 없지만 온라인 프로바이더가 실재를 확인함 |
+| `unknown` | 형식은 맞지만 사전에도, 어떤 출처에도 없음 |
+
+---
+
+## AI 대전 — 턴 페이스 엔진
+
+`web/index.html` 의 AI MODE 는 실제로 동작하는 1인용 대전이다(멀티플레이는 의도적으로
+가장 나중에 구현한다). 난이도를 고르면 사전에서 무작위 시작 단어를 뽑아 플레이어와
+AI(`src/game/ai.ts`)가 번갈아 잇는다 — 단어 판정은 위 사전 조회 API 의 `validateTurn()`
+을 그대로 쓴다(한 글자 단어는 검증 규칙의 `minLength: 2` 로 항상 거부된다).
+
+### 턴 페이스 규칙 (`src/game/pace.ts`)
+
+```
+제한 시간(초) = max(2, 13 − 0.3 × (턴 − 1))     // 턴은 1부터
+배속          = 13 / 제한시간(턴)                // 첫 턴 1.0배 ~ 하한에서 6.5배
+```
+
+턴을 거듭할수록(성공이든 실패든) 제한 시간이 13초에서 턴당 0.3초씩 줄어 최소 2초에서
+멈춘다. **배경음악 재생 속도와 특수 단어(원신·신화·악마학 등 `korean_dict` 이외 출처)
+연출 속도는 이 배속과 정확히 같은 비율로 빨라진다** — `applyPace()` 가 매 턴마다 이
+배속을 계산해 절차적 BGM 시퀀서의 스케줄 간격과 `--pace-ratio` CSS 변수(펄스 애니메이션이
+`calc(900ms / var(--pace-ratio))` 로 참조)에 동시에 적용한다.
+
+- 외부 BGM 에셋은 포함하지 않는다(제공된 트랙이 없고, 라이선스 없는 음원을 넣을 수 없다).
+  대신 Web Audio 로 짧은 아르페지오를 절차적으로 반복 재생해, "속도"가 실제로 귀에 들리게
+  동작하는 것을 확인할 수 있다.
+- AI 난이도(`easy`/`normal`/`hard`/`insane`)는 `chooseAiMove()` 가 담당한다 — 쉬움은
+  무작위, 보통은 상대를 즉시 한방단어로 몰지 않는 후보 우선, 어려움/광기는 그 수를 두었을 때
+  플레이어에게 남는 후속 후보가 가장 적은 단어를 고른다(전방탐색 폭만 다름).
+
+순수 로직(`pace.ts`, `ai.ts`)은 vitest 로, 실제 화면 배선(타이머 진행·HP 감소·승패 판정·
+이스터에그)은 `npm run test:e2e` 의 Playwright 시나리오로 검증한다.
+
+---
+
 ## 증분 업데이트
 
 ```bash
@@ -366,11 +468,14 @@ src/
   core/                      정규화·검증·병합·lore·증분·내보내기·런타임 스토어
   net/                       HTTP 캐시, MediaWiki 클라이언트
   sources/                   소스 9종 + 인터페이스/레지스트리
-  cli.ts                     CLI
+  service/                   실시간 사전 조회 API(리졸버·프로바이더·캐시, 브라우저/서버 공용)
+  cli.ts                     빌더 CLI
+  httpServer.ts              사전 조회 API 서버 (node:http)
 examples/                    예시 출력 JSON, 소스 추가 예제, 서버 사용 예제
-scripts/                     벤치마크, 예시 생성기
-tests/                       vitest (59 tests)
-web/index.html               게임 사이트 UI 시안
+scripts/                     벤치마크, 예시 생성기, E2E 스모크 테스트
+tests/                       vitest (82 tests)
+web/index.html               게임 사이트 UI — DICTIONARY 창이 사전 조회 API 로 실제 동작함
+.github/workflows/pages.yml  GitHub Pages 배포(빌드+조립+배포)
 ```
 
 ---
@@ -378,15 +483,23 @@ web/index.html               게임 사이트 UI 시안
 ## 개발
 
 ```bash
-npm test           # vitest
+npm test           # vitest (82 tests)
 npm run typecheck  # tsc (src + tests + scripts + examples)
-npm run build      # dist/ 로 컴파일
+npm run build      # dist/ 로 컴파일 (브라우저가 로드하는 dist/service/browser.js 포함)
 npm run bench      # 대규모 빌드 벤치마크
+npm run serve      # 사전 조회 API 서버 (http://localhost:8787)
+npm run test:e2e   # 실제 Chromium 으로 DICTIONARY 창 검색까지 검증하는 E2E 스모크 테스트
 ```
+
+`test:e2e` 는 `dict:build` + `build` 산출물을 GitHub Pages 와 동일한 구조로 임시
+조립한 뒤 Playwright 로 열어, 등록 단어 조회 / 형식 오류 즉시 거부 / 미등록 단어
+온라인 검색(가능한 환경이라면 `resolved` 까지, 막힌 환경이라면 안전한 `unknown` 까지) /
+이스터에그 팔레트 전환을 실제 브라우저에서 확인한다.
 
 ### 네트워크가 막힌 환경에서
 
 기본 빌드(`npm run dict:build`)는 네트워크를 전혀 쓰지 않는다.
 `--online` 이 필요한 CI/샌드박스에서는 `ko.wikipedia.org`,
-`genshin-impact.fandom.com`, `opendict.korean.go.kr` 로의 아웃바운드가 열려 있어야 한다.
+`genshin-impact.fandom.com`, `ko.wiktionary.org`, `opendict.korean.go.kr` 로의
+아웃바운드가 열려 있어야 한다.
 막혀 있으면 각 소스가 경고를 남기고 시드/캐시로 폴백하므로 빌드 자체는 성공한다.

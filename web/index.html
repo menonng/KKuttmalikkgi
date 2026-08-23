@@ -19,6 +19,41 @@
         --shadow: 0 7px 0 var(--line);
     }
 
+    /* =========================================================
+       SECRET THEME (easter egg: 19911018mafumafu)
+       Swaps the whole palette to the four secret colors.
+       ========================================================= */
+    body.secret {
+        --bg: #f0d9e4;
+        --surface: #eeedf2;
+        --surface-soft: #f0d9e4;
+        --ink: #1d2327;
+        --muted: #962b28;
+        --line: #1d2327;
+        --red: #962b28;
+        --pink: #eeedf2;
+        --silver: #eeedf2;
+        --shadow: 0 7px 0 var(--line);
+    }
+
+    body.secret .ai {
+        background: #962b28;
+    }
+
+    body.secret .multiplayer {
+        background: #1d2327;
+    }
+
+    body.secret .modal-nav button.active,
+    body.secret .primary-button {
+        background: #962b28;
+        color: #eeedf2;
+    }
+
+    body.secret .toggle.on {
+        background: #f0d9e4;
+    }
+
     * {
         box-sizing: border-box;
     }
@@ -33,6 +68,9 @@
     body {
         background: var(--bg);
         color: var(--ink);
+        transition:
+            background 220ms ease,
+            color 220ms ease;
         font-family:
             "Pretendard",
             "Noto Sans KR",
@@ -465,6 +503,358 @@
     }
 
     /* =========================================================
+       AI MATCH SCREEN
+       ========================================================= */
+
+    .match-hud {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--muted);
+    }
+
+    .match-hp {
+        display: flex;
+        gap: 4px;
+        font-size: 18px;
+        letter-spacing: 2px;
+    }
+
+    .match-hp .lost {
+        opacity: 0.25;
+    }
+
+    .match-speed {
+        padding: 3px 10px;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-soft);
+    }
+
+    .match-timer-track {
+        height: 10px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-soft);
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
+
+    .match-timer-fill {
+        height: 100%;
+        background: var(--red);
+        transform-origin: left;
+        transition: transform 100ms linear, background 200ms ease;
+    }
+
+    .match-timer-fill.urgent {
+        background: #d94a2f;
+    }
+
+    .match-word-stage {
+        text-align: center;
+        padding: 20px 12px;
+    }
+
+    .match-turn-label {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .match-current-word {
+        margin-top: 6px;
+        font-size: 40px;
+        font-weight: 950;
+        letter-spacing: -1px;
+    }
+
+    .match-hint-char {
+        color: var(--red);
+    }
+
+    .match-status {
+        margin-top: 6px;
+        min-height: 20px;
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    .match-input-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+    }
+
+    .match-input-row input {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        font-size: 16px;
+    }
+
+    .match-input-row input:disabled {
+        background: var(--surface-soft);
+        color: var(--muted);
+    }
+
+    .match-log {
+        margin-top: 18px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .match-log-word {
+        flex-shrink: 0;
+        padding: 6px 12px;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        background: white;
+        white-space: nowrap;
+    }
+
+    .match-log-word.ai {
+        background: var(--ink);
+        color: white;
+    }
+
+    .match-log-word.special {
+        /* applyPace() 가 갱신하는 --pace-ratio 를 그대로 나눠 쓴다 — 타이머가
+           빨라지는 비율과 정확히 같은 비율로 이 펄스도 빨라진다. */
+        animation: match-special-pulse calc(900ms / var(--pace-ratio, 1)) ease-in-out infinite;
+    }
+
+    @keyframes match-special-pulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(150, 43, 40, 0.35);
+        }
+        50% {
+            box-shadow: 0 0 0 5px rgba(150, 43, 40, 0);
+        }
+    }
+
+    .match-result {
+        margin-top: 18px;
+        padding: 16px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        text-align: center;
+    }
+
+    .match-result.win {
+        background: #e4f2e6;
+    }
+
+    .match-result.lose {
+        background: #fbe4e2;
+    }
+
+    .match-result h4 {
+        margin: 0 0 6px;
+        font-size: 22px;
+        font-weight: 950;
+    }
+
+    .match-result-actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .match-bgm-toggle {
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 12px;
+        background: var(--surface-soft);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    /* =========================================================
+       DICTIONARY LOOKUP
+       ========================================================= */
+
+    .lookup-hint {
+        margin: 14px 0 0;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+    .lookup-results {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .lookup-empty {
+        padding: 18px 4px;
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    .lookup-loading {
+        padding: 18px 4px;
+        color: var(--muted);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lookup-spinner {
+        width: 14px;
+        height: 14px;
+        border: 3px solid var(--line);
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: lookup-spin 700ms linear infinite;
+    }
+
+    @keyframes lookup-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .lookup-card {
+        padding: 16px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        background: white;
+    }
+
+    .lookup-card.ng {
+        background: var(--surface-soft);
+    }
+
+    .lookup-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .lookup-word {
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+    }
+
+    .lookup-badge {
+        flex-shrink: 0;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+    }
+
+    .lookup-badge.ok {
+        background: #e4f2e6;
+        color: #1f6b34;
+    }
+
+    .lookup-badge.ng {
+        background: #fbe4e2;
+        color: var(--red);
+    }
+
+    .lookup-badge.warn {
+        background: var(--pink);
+        color: #7a2440;
+    }
+
+    .lookup-lore {
+        margin-top: 8px;
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+    }
+
+    .lookup-reason {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+    .lookup-meta {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .lookup-chip {
+        padding: 3px 9px;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        background: var(--surface-soft);
+    }
+
+    .lookup-origin {
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    .recent-row {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .recent-label {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .recent-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .recent-chip {
+        padding: 5px 11px;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .recent-chip:hover {
+        background: var(--surface-soft);
+    }
+
+    /* =========================================================
        RESPONSIVE
        ========================================================= */
 
@@ -577,13 +967,11 @@
         <section class="card featured-card">
             <div class="featured-caption">오늘의 단어</div>
 
-            <!-- PLACEHOLDER:
-                 Replace with a dynamically selected dictionary entry. -->
-            <div class="featured-word">헤파이스토스</div>
+            <!-- Populated at runtime from dictionary.json via
+                 DictionaryStore.random() — see initDictionary() below. -->
+            <div class="featured-word" id="featuredWord">불러오는 중…</div>
 
-            <!-- PLACEHOLDER:
-                 Replace with lore from the dictionary. -->
-            <div class="featured-lore">그리스 신화</div>
+            <div class="featured-lore" id="featuredLore">사전을 불러오고 있습니다.</div>
         </section>
 
         <section class="main-actions">
@@ -672,6 +1060,639 @@
 
 <script>
 /* ============================================================
+   DICTIONARY DATA LAYER
+
+   Loads the built dictionary (data/dictionary.json) and, for any
+   word it doesn't contain, searches Wikipedia / the Genshin Impact
+   fandom wiki / Wiktionary live to confirm the word actually exists
+   before accepting it. This is the real implementation backing the
+   DICTIONARY window's search box below — see src/service/browser.ts
+   for the resolver itself (dist/service/browser.js is the compiled,
+   dependency-free ESM build loaded here via dynamic import()).
+
+   No bundler is involved: tsc emits plain relative ESM imports, so
+   this file is loadable directly by the browser from dist/.
+   ============================================================ */
+
+let dictionaryHandlePromise = null;
+
+/** Lazily loads + caches the resolver. Safe to call many times. */
+function getDictionaryHandle() {
+    if (!dictionaryHandlePromise) {
+        dictionaryHandlePromise = import("./dist/service/browser.js")
+            .then(({ createBrowserResolver }) =>
+                createBrowserResolver({ dictionaryUrl: "./data/dictionary.json" })
+            )
+            .then((handle) => {
+                updateFeaturedWord(handle);
+                return handle;
+            })
+            .catch((error) => {
+                console.error("[dictionary] failed to initialize resolver:", error);
+                const wordEl = document.getElementById("featuredWord");
+                const loreEl = document.getElementById("featuredLore");
+                if (wordEl) wordEl.textContent = "사전을 불러오지 못했습니다";
+                if (loreEl) loreEl.textContent = "네트워크 연결을 확인해 주세요.";
+                throw error;
+            });
+    }
+    return dictionaryHandlePromise;
+}
+
+/** Picks a random entry from the loaded dictionary for the "오늘의 단어" card. */
+function updateFeaturedWord(handle) {
+    const wordEl = document.getElementById("featuredWord");
+    const loreEl = document.getElementById("featuredLore");
+    if (!wordEl || !loreEl) return;
+
+    const entry = handle.dictionary.random();
+    if (!entry) {
+        wordEl.textContent = "사전이 비어 있습니다";
+        loreEl.textContent = "먼저 dictbuild build 로 사전을 생성하세요.";
+        return;
+    }
+    wordEl.textContent = entry.word;
+    loreEl.textContent = entry.lore;
+}
+
+// Kick off loading as soon as the page runs, so the first search inside
+// the modal doesn't have to wait for the initial fetch + module import.
+getDictionaryHandle();
+
+const RECENT_SEARCH_KEY = "kkuttmal:recentSearches";
+
+function loadRecentSearches() {
+    try {
+        const raw = localStorage.getItem(RECENT_SEARCH_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+}
+
+function pushRecentSearch(word) {
+    try {
+        const list = loadRecentSearches().filter((item) => item !== word);
+        list.unshift(word);
+        localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(list.slice(0, 8)));
+    } catch {
+        // Private browsing / storage full — recent search history is a
+        // convenience only, so failing to persist it is not an error.
+    }
+}
+
+function escapeHtml(text) {
+    return String(text ?? "").replace(/[&<>"']/gu, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    }[ch]));
+}
+
+function renderRecentChips() {
+    const container = document.getElementById("dictionaryRecent");
+    if (!container) return;
+
+    const list = loadRecentSearches();
+    container.innerHTML = list
+        .map((word) => `<button class="recent-chip" data-word="${escapeHtml(word)}">${escapeHtml(word)}</button>`)
+        .join("");
+
+    container.querySelectorAll("[data-word]").forEach((chip) => {
+        chip.addEventListener("click", () => {
+            const input = document.getElementById("dictionaryInput");
+            if (input) input.value = chip.dataset.word;
+            runDictionarySearch(chip.dataset.word);
+        });
+    });
+}
+
+/** Wires up the search box inside the DICTIONARY modal. Called from openModal(). */
+function initDictionaryModal() {
+    const input = document.getElementById("dictionaryInput");
+    const button = document.getElementById("dictionarySearchButton");
+    if (!input || !button) return;
+
+    renderRecentChips();
+
+    const run = () => {
+        const word = input.value.trim();
+        if (word) runDictionarySearch(word);
+    };
+
+    button.addEventListener("click", run);
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") run();
+    });
+    input.focus();
+}
+
+const LOOKUP_STATUS_LABEL = {
+    known: { badge: "ok", text: "사용 가능" },
+    resolved: { badge: "ok", text: "사용 가능" },
+    unknown: { badge: "ng", text: "사전에 없음" },
+    invalid: { badge: "warn", text: "형식 오류" },
+};
+
+const LOOKUP_ORIGIN_LABEL = {
+    dictionary: "등록된 사전에서 확인됨",
+    online: "실시간 검색으로 확인됨",
+    cache: "이전 검색 결과",
+};
+
+/** Renders one Resolution (from DictionaryResolver.resolve) as a result card. */
+function renderLookupResult(resolution) {
+    const status = LOOKUP_STATUS_LABEL[resolution.status] ?? { badge: "warn", text: "알 수 없음" };
+    const cardClass = status.badge === "ok" ? "lookup-card" : "lookup-card ng";
+
+    if (resolution.status === "invalid" || resolution.status === "unknown") {
+        return `
+            <div class="${cardClass}">
+                <div class="lookup-top">
+                    <span class="lookup-word">${escapeHtml(resolution.word)}</span>
+                    <span class="lookup-badge ${status.badge}">${status.text}</span>
+                </div>
+                <div class="lookup-reason">${escapeHtml(resolution.reason || "")}</div>
+            </div>
+        `;
+    }
+
+    const entry = resolution.entry;
+    const chips = entry.sources
+        .map((source) => `<span class="lookup-chip">${escapeHtml(source)}</span>`)
+        .join("");
+
+    return `
+        <div class="${cardClass}">
+            <div class="lookup-top">
+                <span class="lookup-word">${escapeHtml(entry.word)}</span>
+                <span class="lookup-badge ${status.badge}">${status.text}</span>
+            </div>
+            <div class="lookup-lore">${escapeHtml(entry.lore)}</div>
+            <div class="lookup-meta">
+                ${chips}
+                <span class="lookup-origin">${LOOKUP_ORIGIN_LABEL[resolution.origin] ?? ""}</span>
+            </div>
+        </div>
+    `;
+}
+
+/** Runs a lookup for one word and renders the result into #dictionaryResults. */
+async function runDictionarySearch(word) {
+    const results = document.getElementById("dictionaryResults");
+    if (!results) return;
+
+    results.innerHTML = `
+        <div class="lookup-loading">
+            <span class="lookup-spinner"></span>
+            '${escapeHtml(word)}' 확인 중 — 사전, 위키백과, 원신 위키, 위키낱말사전을 순서대로 검색합니다…
+        </div>
+    `;
+
+    try {
+        const handle = await getDictionaryHandle();
+        const resolution = await handle.resolver.resolve(word);
+        results.innerHTML = renderLookupResult(resolution);
+
+        if (resolution.status === "known" || resolution.status === "resolved") {
+            pushRecentSearch(resolution.entry.word);
+            renderRecentChips();
+        }
+    } catch (error) {
+        console.error("[dictionary] lookup failed:", error);
+        results.innerHTML = `
+            <div class="lookup-card ng">
+                <div class="lookup-top">
+                    <span class="lookup-word">${escapeHtml(word)}</span>
+                    <span class="lookup-badge warn">오류</span>
+                </div>
+                <div class="lookup-reason">
+                    사전을 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
+                </div>
+            </div>
+        `;
+    }
+}
+
+/* ============================================================
+   AI MATCH ENGINE
+
+   Real single-player word-chain match against a heuristic AI
+   opponent (src/game/ai.ts). Turn pacing follows src/game/pace.ts:
+   the timer starts at 13s and shortens by 0.3s per turn (floor 2s),
+   and the procedural BGM tempo + special-word pulse animation speed
+   up by that exact same ratio — see paceSpeedRatio().
+
+   No external BGM asset is bundled (none was supplied and the repo
+   avoids embedding third-party media); instead a tiny Web Audio
+   arpeggio sequencer plays procedurally so "BGM speed" is something
+   that actually runs rather than a inert stub.
+   ============================================================ */
+
+let paceModulePromise = null;
+function getPaceModule() {
+    if (!paceModulePromise) paceModulePromise = import("./dist/game/pace.js");
+    return paceModulePromise;
+}
+
+let aiModulePromise = null;
+function getAiModule() {
+    if (!aiModulePromise) aiModulePromise = import("./dist/game/ai.js");
+    return aiModulePromise;
+}
+
+const DIFFICULTY_LABEL = { easy: "쉬움", normal: "보통", hard: "어려움", insane: "광기" };
+const MATCH_START_HP = 3;
+
+/** 현재 진행 중인 매치의 전체 상태. 모달이 닫히면 stopMatch() 로 정리된다. */
+let match = null;
+
+/** 절차적 BGM 시퀀서 — 실제 오디오 트랙 없이 Web Audio 로 짧은 아르페지오를 반복 재생한다. */
+class ProceduralBgm {
+    constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.baseIntervalMs = 260;
+        this.speedRatio = 1;
+        this.timer = null;
+        // 단조 5음 스케일 아르페지오 (라 도 레 미 솔, A minor pentatonic 근처).
+        this.notes = [220.0, 261.63, 293.66, 329.63, 392.0, 329.63, 293.66, 261.63];
+        this.step = 0;
+    }
+
+    start() {
+        if (!this.ctx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return; // 지원 안 하는 브라우저 — 조용히 건너뛴다.
+            this.ctx = new AudioContextClass();
+        }
+        if (this.ctx.state === "suspended") this.ctx.resume();
+        this.scheduleNext();
+    }
+
+    scheduleNext() {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+            this.playStep();
+            this.scheduleNext();
+        }, this.baseIntervalMs / this.speedRatio);
+    }
+
+    playStep() {
+        if (this.muted || !this.ctx) return;
+        const freq = this.notes[this.step % this.notes.length];
+        this.step += 1;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.05, this.ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.18);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+    }
+
+    /** 배속을 갱신한다 — paceSpeedRatio() 값을 그대로 넘기면 된다. */
+    setSpeedRatio(ratio) {
+        this.speedRatio = ratio;
+    }
+
+    setMuted(muted) {
+        this.muted = muted;
+    }
+
+    stop() {
+        clearTimeout(this.timer);
+        this.timer = null;
+        if (this.ctx) {
+            this.ctx.close().catch(() => {});
+            this.ctx = null;
+        }
+    }
+}
+
+const bgm = new ProceduralBgm();
+
+/** entry.sources 가 일반 어휘(korean_dict)만이 아니면 "특수 단어"로 취급한다. */
+function isSpecialWord(entry) {
+    return entry.sources.some((source) => source !== "korean_dict");
+}
+
+async function startAiMatch(difficulty) {
+    const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
+    const handle = await getDictionaryHandle();
+    const starter = handle.dictionary.random();
+
+    if (!starter) {
+        openModal("AI MODE", `<div class="modal-panel">사전이 비어 있어 매치를 시작할 수 없습니다.</div>`);
+        return;
+    }
+
+    match = {
+        difficulty,
+        dictionary: handle.dictionary,
+        resolver: handle.resolver,
+        turn: 1,
+        hp: MATCH_START_HP,
+        used: new Set([starter.word]),
+        current: starter,
+        log: [{ entry: starter, side: "start" }],
+        phase: "player",
+        timerId: null,
+        deadline: 0,
+        muted: false,
+    };
+
+    renderMatchScreen();
+    bgm.start();
+    applyPace(paceSpeedRatio);
+    beginPlayerTurn(turnDurationSeconds);
+}
+
+function applyPace(paceSpeedRatio) {
+    const ratio = paceSpeedRatio(match.turn);
+    bgm.setSpeedRatio(ratio);
+    document.documentElement.style.setProperty("--pace-ratio", String(ratio));
+}
+
+function renderMatchScreen() {
+    const content = document.getElementById("modalContent");
+    if (!content) return;
+    modalTitle.textContent = `AI MODE · ${DIFFICULTY_LABEL[match.difficulty]}`;
+
+    content.innerHTML = `
+        <div class="modal-panel">
+            <div class="match-hud">
+                <span id="matchTurnNumber">턴 ${match.turn}</span>
+                <span class="match-hp" id="matchHp"></span>
+                <span class="match-speed" id="matchSpeed">1.0배속</span>
+                <button class="match-bgm-toggle" id="matchBgmToggle">🔊 BGM</button>
+            </div>
+
+            <div class="match-timer-track">
+                <div class="match-timer-fill" id="matchTimerFill" style="transform: scaleX(1);"></div>
+            </div>
+
+            <div class="match-word-stage">
+                <div class="match-turn-label" id="matchTurnLabel">플레이어 턴</div>
+                <div class="match-current-word" id="matchCurrentWord"></div>
+                <div class="match-status" id="matchStatus"></div>
+            </div>
+
+            <div class="match-input-row">
+                <input id="matchInput" type="text" placeholder="다음 단어를 입력…" autocomplete="off">
+                <button class="primary-button" id="matchSubmit">제출</button>
+            </div>
+
+            <div class="match-log" id="matchLog"></div>
+            <div id="matchResult"></div>
+        </div>
+    `;
+
+    document.getElementById("matchBgmToggle").addEventListener("click", (event) => {
+        match.muted = !match.muted;
+        bgm.setMuted(match.muted);
+        event.currentTarget.textContent = match.muted ? "🔇 BGM" : "🔊 BGM";
+    });
+    document.getElementById("matchSubmit").addEventListener("click", submitMatchWord);
+    document.getElementById("matchInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") submitMatchWord();
+    });
+
+    renderHp();
+    renderCurrentWord();
+    renderLog();
+}
+
+function renderHp() {
+    const el = document.getElementById("matchHp");
+    if (!el) return;
+    el.innerHTML = Array.from({ length: MATCH_START_HP })
+        .map((_, i) => `<span class="${i < match.hp ? "" : "lost"}">♥</span>`)
+        .join("");
+}
+
+function renderCurrentWord() {
+    const el = document.getElementById("matchCurrentWord");
+    if (!el) return;
+    const word = match.current.word;
+    el.innerHTML = `${escapeHtml(word.slice(0, -1))}<span class="match-hint-char">${escapeHtml(word.slice(-1))}</span>`;
+}
+
+function renderLog() {
+    const el = document.getElementById("matchLog");
+    if (!el) return;
+    el.innerHTML = match.log
+        .map(({ entry, side }) => {
+            const cls = ["match-log-word"];
+            if (side === "ai") cls.push("ai");
+            if (isSpecialWord(entry)) cls.push("special");
+            return `<span class="${cls.join(" ")}">${escapeHtml(entry.word)}</span>`;
+        })
+        .join("");
+    el.scrollLeft = el.scrollWidth;
+}
+
+// 특수 단어 펄스 애니메이션 속도. CSS 쪽 --pace-ratio 커스텀 프로퍼티(applyPace() 가 갱신)를
+// calc() 로 나눠 쓰므로, 여기서는 표시용 배속 텍스트("N.N배속")를 위해서만 값을 들고 있는다.
+let currentPaceRatioCache = 1;
+
+function setStatus(message) {
+    const el = document.getElementById("matchStatus");
+    if (el) el.textContent = message;
+}
+
+async function beginPlayerTurn(turnDurationSecondsFn) {
+    if (!match || match.phase === "over") return;
+    match.phase = "player";
+    document.getElementById("matchTurnLabel").textContent = "플레이어 턴";
+    document.getElementById("matchInput").disabled = false;
+    document.getElementById("matchSubmit").disabled = false;
+    document.getElementById("matchInput").focus();
+    setStatus("");
+    runTimer(turnDurationSecondsFn(match.turn), () => handleAttemptResult(null, "timeout"));
+}
+
+function runTimer(durationSeconds, onExpire) {
+    cancelAnimationFrame(match.timerId);
+    const fill = document.getElementById("matchTimerFill");
+    const total = durationSeconds * 1000;
+    const start = performance.now();
+    match.deadline = start + total;
+
+    const step = () => {
+        if (!match || match.phase === "over") return;
+        const remaining = match.deadline - performance.now();
+        const ratio = Math.max(0, remaining / total);
+        if (fill) {
+            fill.style.transform = `scaleX(${ratio})`;
+            fill.classList.toggle("urgent", ratio < 0.3);
+        }
+        if (remaining <= 0) {
+            onExpire();
+            return;
+        }
+        match.timerId = requestAnimationFrame(step);
+    };
+    match.timerId = requestAnimationFrame(step);
+}
+
+function stopTimer() {
+    if (match?.timerId) cancelAnimationFrame(match.timerId);
+}
+
+async function submitMatchWord() {
+    if (!match || match.phase !== "player") return;
+    const input = document.getElementById("matchInput");
+    const word = input.value.trim();
+    if (!word) return;
+
+    stopTimer();
+    document.getElementById("matchInput").disabled = true;
+    document.getElementById("matchSubmit").disabled = true;
+    setStatus("확인 중…");
+
+    const validation = await match.resolver.validateTurn(word, {
+        previous: match.current.word,
+        used: match.used,
+    });
+    handleAttemptResult(validation, validation.valid ? "ok" : validation.code);
+}
+
+async function handleAttemptResult(validation, code) {
+    const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
+
+    if (code === "ok" && validation.valid) {
+        acceptWord(validation.entry, "player");
+        match.turn += 1;
+        applyPace(paceSpeedRatio);
+        updateSpeedLabel(paceSpeedRatio);
+        renderCurrentWord();
+        renderHp();
+        document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
+        document.getElementById("matchInput").value = "";
+        match.phase = "ai";
+        setStatus("");
+        void runAiTurn(turnDurationSeconds, paceSpeedRatio);
+        return;
+    }
+
+    // 실패(형식 오류/미등록/이미 사용/연결 안 됨/시간 초과) — 체력을 깎고 같은 단어에서 다시 시도.
+    match.hp -= 1;
+    match.turn += 1; // 턴 압박은 실패해도 계속 진행된다.
+    applyPace(paceSpeedRatio);
+    updateSpeedLabel(paceSpeedRatio);
+    renderHp();
+
+    const reason = code === "timeout" ? "시간 초과!" : validation?.message ?? "실패";
+    setStatus(reason);
+
+    if (match.hp <= 0) {
+        endMatch(false, reason);
+        return;
+    }
+
+    document.getElementById("matchInput").disabled = false;
+    document.getElementById("matchSubmit").disabled = false;
+    document.getElementById("matchInput").value = "";
+    document.getElementById("matchInput").focus();
+    runTimer(turnDurationSeconds(match.turn), () => handleAttemptResult(null, "timeout"));
+}
+
+function acceptWord(entry, side) {
+    match.used.add(entry.word);
+    match.current = entry;
+    match.log.push({ entry, side });
+    renderLog();
+}
+
+function updateSpeedLabel(paceSpeedRatio) {
+    currentPaceRatioCache = paceSpeedRatio(match.turn);
+    const el = document.getElementById("matchSpeed");
+    if (el) el.textContent = `${currentPaceRatioCache.toFixed(1)}배속`;
+    const turnEl = document.getElementById("matchTurnNumber");
+    if (turnEl) turnEl.textContent = `턴 ${match.turn}`;
+}
+
+async function runAiTurn(turnDurationSecondsFn, paceSpeedRatio) {
+    const { chooseAiMove } = await getAiModule();
+    const duration = turnDurationSecondsFn(match.turn);
+
+    // 실제 오디오/타이머 배속과 같은 비율로 AI의 "생각 시간"도 짧아진다 —
+    // 다만 항상 제한 시간 안에 수를 결정해 타임아웃으로 지지는 않는다.
+    const thinkMs = Math.min(1100, duration * 1000 * 0.55);
+    runTimer(duration, () => {}); // 시각적 타이머만 계속 보여준다(AI 는 타임아웃으로 지지 않음).
+
+    await new Promise((resolve) => setTimeout(resolve, thinkMs));
+    if (!match || match.phase !== "ai") return;
+
+    const move = chooseAiMove(match.dictionary, match.current.word, {
+        difficulty: match.difficulty,
+        exclude: match.used,
+    });
+
+    stopTimer();
+
+    if (!move) {
+        endMatch(true, "AI 가 더 이상 이을 단어를 찾지 못했습니다!");
+        return;
+    }
+
+    acceptWord(move, "ai");
+    match.turn += 1;
+    applyPace(paceSpeedRatio);
+    updateSpeedLabel(paceSpeedRatio);
+    renderCurrentWord();
+    beginPlayerTurn(turnDurationSecondsFn);
+}
+
+function endMatch(playerWon, reason) {
+    stopTimer();
+    if (!match) return;
+    match.phase = "over";
+    document.getElementById("matchInput").disabled = true;
+    document.getElementById("matchSubmit").disabled = true;
+    document.getElementById("matchTurnLabel").textContent = playerWon ? "승리!" : "패배";
+    setStatus("");
+
+    const result = document.getElementById("matchResult");
+    if (result) {
+        result.innerHTML = `
+            <div class="match-result ${playerWon ? "win" : "lose"}">
+                <h4>${playerWon ? "승리했습니다" : "패배했습니다"}</h4>
+                <p>${escapeHtml(reason ?? "")}</p>
+                <div class="match-result-actions">
+                    <button class="primary-button" id="matchRematch">다시 하기</button>
+                    <button class="close-button" id="matchQuit">×</button>
+                </div>
+            </div>
+        `;
+        document.getElementById("matchRematch").addEventListener("click", () => {
+            const difficulty = match.difficulty;
+            stopMatch();
+            startAiMatch(difficulty);
+        });
+        document.getElementById("matchQuit").addEventListener("click", () => {
+            stopMatch();
+            closeModal();
+        });
+    }
+}
+
+/** 매치 진행 중에 모달이 닫히면(X, 배경 클릭) 타이머/BGM 을 확실히 정리한다. */
+function stopMatch() {
+    stopTimer();
+    bgm.stop();
+    document.documentElement.style.removeProperty("--pace-ratio");
+    match = null;
+}
+
+/* ============================================================
    MODAL CONTENT
    The provided reference-window images should eventually be
    replaced by the real interactive versions in the application.
@@ -693,16 +1714,24 @@ const modalTemplates = {
                         id="dictionaryInput"
                         type="text"
                         placeholder="Search a word..."
+                        autocomplete="off"
                     >
-                    <button class="primary-button">검색</button>
+                    <button class="primary-button" id="dictionarySearchButton">검색</button>
                 </div>
 
-                <!-- PLACEHOLDER:
-                     Show actual dictionary search results here.
-                     Each result should contain:
-                     word + lore + source information. -->
-                <div style="margin-top:24px;color:#777;">
-                    검색 결과가 여기에 표시됩니다.
+                <p class="lookup-hint">
+                    등록된 사전에 먼저 확인하고, 없는 단어는 위키백과·원신 위키·
+                    위키낱말사전을 실시간으로 검색해 실재 여부를 확인합니다.
+                </p>
+
+                <!-- Populated by renderLookupResult() in the page script. -->
+                <div id="dictionaryResults" class="lookup-results">
+                    <div class="lookup-empty">단어를 입력하고 검색해 보세요.</div>
+                </div>
+
+                <div class="recent-row">
+                    <span class="recent-label">최근 검색</span>
+                    <div id="dictionaryRecent" class="recent-chips"></div>
                 </div>
             </section>
         </div>
@@ -869,32 +1898,38 @@ function openAI() {
             <h3>난이도 선택</h3>
 
             <div class="room-actions">
-                <button class="room-button">
+                <button class="room-button" data-difficulty="easy">
                     <strong>쉬움</strong>
                     <span>여유로운 상대.</span>
                 </button>
 
-                <button class="room-button">
+                <button class="room-button" data-difficulty="normal">
                     <strong>보통</strong>
                     <span>표준 난이도.</span>
                 </button>
 
-                <button class="room-button">
+                <button class="room-button" data-difficulty="hard">
                     <strong>어려움</strong>
                     <span>만만치 않은 상대.</span>
                 </button>
 
-                <button class="room-button">
+                <button class="room-button" data-difficulty="insane">
                     <strong>광기</strong>
                     <span>고통을 즐기는 사람용.</span>
                 </button>
             </div>
 
-            <!-- PLACEHOLDER:
-                 Start the actual AI match here. -->
+            <p class="lookup-hint">
+                턴이 지날수록 제한 시간이 13초에서 0.3초씩 줄어들어 최소 2초까지 짧아집니다.
+                배경음악과 특수 단어 연출도 그만큼 빨라집니다.
+            </p>
         </div>
         `
     );
+
+    document.querySelectorAll("[data-difficulty]").forEach((button) => {
+        button.addEventListener("click", () => startAiMatch(button.dataset.difficulty));
+    });
 }
 
 /* ============================================================
@@ -919,9 +1954,19 @@ function openModal(title, html) {
                 oneshotToggle.classList.contains("on") ? "켜짐" : "꺼짐";
         };
     }
+
+    // The dictionary search UI only exists inside the "dictionary" template,
+    // so detect it by its input element rather than threading a modal key
+    // through every openModal() call site (multiplayer/AI reuse this too).
+    if (document.getElementById("dictionaryInput")) {
+        initDictionaryModal();
+    }
 }
 
 function closeModal() {
+    // 매치 도중 X/배경 클릭으로 닫으면 타이머와 절차적 BGM 을 반드시 정리한다 —
+    // 안 그러면 모달을 닫아도 오디오 스케줄러가 백그라운드에서 계속 돈다.
+    if (match) stopMatch();
     backdrop.classList.remove("open");
 }
 
@@ -1015,13 +2060,20 @@ document.addEventListener("keydown", (event) => {
    1. Replace all placeholder player/profile information with
       actual locally stored profile data.
 
-   2. Replace the Featured Word with a real random dictionary entry.
+   2. DONE — Featured Word now shows a real random entry loaded from
+      data/dictionary.json (see updateFeaturedWord() above).
 
-   3. Connect MULTIPLAYER to the real server.
+   3. Connect MULTIPLAYER to the real server. Implement this LAST —
+      after the dictionary API (done) and the AI opponent.
 
    4. Connect AI MODE to the AI game engine.
 
-   5. Implement the full dictionary UI.
+   5. DONE — the DICTIONARY window now runs real lookups: known
+      words resolve instantly from the built dictionary, unknown
+      words are searched live against Wikipedia / the Genshin
+      fandom wiki / Wiktionary, and both existence and format are
+      validated before a word is accepted. See the "DICTIONARY DATA
+      LAYER" block above and src/service/*.
 
    6. Add the supplied reference-window layouts to their
       respective modal panels.

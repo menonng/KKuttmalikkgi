@@ -1,0 +1,58 @@
+name: pages
+
+# GitHub 이 제공하는 주소(https://<owner>.github.io/<repo>/)로 사이트를 배포한다.
+# 저장소 Settings > Pages > Source 를 "GitHub Actions" 로 설정해야 동작한다.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      # 사전 산출물(브라우저가 fetch 할 dictionary.json)을 만든다.
+      # 네트워크가 막혀도 실패하지 않도록 오프라인(시드+코퍼스)으로 빌드한다.
+      - run: npm run dict:build
+
+      # 브라우저가 직접 로드하는 dist/service/browser.js 등을 컴파일한다.
+      - run: npm run build
+
+      # web/ 을 그대로, dist/ 와 dictionary.json 을 사이트가 참조하는 상대경로에 맞춰 배치한다.
+      - name: 사이트 조립
+        run: |
+          mkdir -p site/dist site/data
+          cp web/index.html site/index.html
+          cp -r dist/. site/dist/
+          cp data/dist/dictionary.json site/data/dictionary.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
