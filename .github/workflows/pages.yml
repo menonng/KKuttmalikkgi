@@ -2,10 +2,15 @@ name: pages
 
 # GitHub 이 제공하는 주소(https://<owner>.github.io/<repo>/)로 사이트를 배포한다.
 # 저장소 Settings > Pages > Source 를 "GitHub Actions" 로 설정해야 동작한다.
-
+#
+# 이 저장소는 아직 main 브랜치가 없고 이 브랜치가 기본 브랜치이므로
+# 여기 push 를 트리거로 잡는다. 나중에 main 을 만들어 기본 브랜치로
+# 바꾸면 이 목록에 "main" 을 추가하거나 교체하면 된다.
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - claude/korean-wordchain-dictionary-u15izu
   workflow_dispatch:
 
 permissions:
