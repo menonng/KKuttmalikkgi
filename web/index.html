@@ -765,6 +765,7 @@
         position: relative;
         width: 84px;
         height: 84px;
+        margin-top: 54px;
     }
 
     /* 끝이 약간 둥근 정사각형 + 적절한 위치의 눈 2개. */
@@ -808,7 +809,9 @@
     }
 
     .character-body.hit {
-        animation: character-recoil 220ms ease-out;
+        /* JS 가 hitPlan/estimateHitSequenceMs 결과로 --hit-duration 을 채운다
+           (20 초과 피해는 1초 이상 걸리도록 health.ts 와 공식을 공유한다). */
+        animation: character-recoil var(--hit-duration, 220ms) ease-out;
     }
 
     @keyframes character-recoil {
@@ -859,14 +862,25 @@
         }
     }
 
-    .character-body.exploding {
-        animation: character-explode 420ms cubic-bezier(0.34, 1.8, 0.5, 1) forwards;
+    /* 폭발 순간엔 슬롯 전체(캐릭터+체력바)를 통째로 날려버린다 — 밈처럼 허접하지만
+       역동적으로. JS(playDeathSequence)가 슬롯을 document.body 로 옮기고
+       position: fixed 로 고정한 뒤 이 클래스를 붙이므로, 모달의 overflow: auto
+       에 갇히지 않고 화면 전체를 가로질러 날아갈 수 있다("무빙이 굳이 창 안에
+       갇혀 있을 필요는 없어" 요구사항). --fly-x/--fly-y 는 매번 무작위 방향으로
+       JS 가 정한다.
+    */
+    .character-slot.exploding {
+        animation: character-explode 650ms cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
+        pointer-events: none;
     }
 
     @keyframes character-explode {
-        0% { transform: scale(1) rotate(0deg); opacity: 1; }
-        35% { transform: scale(1.35) rotate(-12deg); opacity: 1; }
-        100% { transform: scale(2.8) rotate(45deg) translateY(-48px); opacity: 0; }
+        0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+        22% { transform: translate(calc(var(--fly-x, 0px) * 0.06), calc(var(--fly-y, 0px) * 0.06)) scale(1.45) rotate(-16deg); opacity: 1; }
+        100% {
+            transform: translate(var(--fly-x, 0px), var(--fly-y, 0px)) scale(0.25) rotate(560deg);
+            opacity: 0;
+        }
     }
 
     .character-shard {
@@ -890,27 +904,35 @@
         }
     }
 
+    /* 캐릭터(84px)보다 눈에 띄게 크게 — 항상 보이는 소품으로 캐릭터 옆에 걸려 있다가
+       피격 순간에 실제로 내려친다("망치가 실제로 보여야" 요구사항). */
     .character-hammer {
         position: absolute;
-        top: -34px;
-        right: -6px;
-        font-size: 30px;
-        transform-origin: 80% 15%;
-        opacity: 0;
+        top: -62px;
+        right: -26px;
+        font-size: 96px;
+        line-height: 1;
+        transform-origin: 78% 14%;
+        transform: rotate(-18deg);
+        filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.25));
         pointer-events: none;
     }
 
     .character-hammer.swing {
-        animation: hammer-swing 240ms ease-in;
+        animation: hammer-swing var(--hit-duration, 240ms) ease-in;
+    }
+
+    /* 재배열(FLIP) 애니메이션이 트랜지션을 거는 동안 사용하는 클래스. */
+    .character-slot.reordering {
+        transition: transform 480ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     @keyframes hammer-swing {
-        0% { transform: rotate(-14deg) scale(1); opacity: 0; }
-        25% { opacity: 1; }
+        0% { transform: rotate(-18deg) scale(1); }
         55% {
             transform: rotate(calc(58deg * var(--hit-amp, 1))) scale(calc(1 + 0.18 * (var(--hit-amp, 1) - 1)));
         }
-        100% { transform: rotate(-14deg) scale(1); opacity: 0; }
+        100% { transform: rotate(-18deg) scale(1); }
     }
 
     .character-hp-track {
@@ -2025,7 +2047,7 @@ function sleep(ms) {
  * resolve 한다 — 이걸 기다린 뒤에야 다음 라운드가 시작된다.
  */
 async function playDamageSequence(side, damage) {
-    const { hitPlan } = await getHealthModule();
+    const { hitPlan, estimateHitSequenceMs } = await getHealthModule();
     const plan = hitPlan(damage);
     const animationsOn = getSetting("animations");
     const body = document.getElementById(`body-${side}`);
@@ -2037,15 +2059,17 @@ async function playDamageSequence(side, damage) {
         return;
     }
 
-    const strike = (amplitude) => {
+    const strike = (amplitude, durationMs) => {
         if (body) {
             body.style.setProperty("--hit-amp", amplitude);
+            body.style.setProperty("--hit-duration", `${durationMs}ms`);
             body.classList.remove("hit");
             void body.offsetWidth; // 강제 리플로우 — 애니메이션 재시작.
             body.classList.add("hit");
         }
         if (hammer) {
             hammer.style.setProperty("--hit-amp", amplitude);
+            hammer.style.setProperty("--hit-duration", `${durationMs}ms`);
             hammer.classList.remove("swing");
             void hammer.offsetWidth;
             hammer.classList.add("swing");
@@ -2054,14 +2078,17 @@ async function playDamageSequence(side, damage) {
 
     if (!plan.heavy) {
         for (let i = 0; i < plan.hits; i += 1) {
-            strike(plan.amplitude);
+            strike(plan.amplitude, plan.intervalMs);
             playClangSound(0.6 + i * 0.05);
             await sleep(plan.intervalMs);
         }
     } else {
-        strike(plan.amplitude);
+        // health.ts 의 estimateHitSequenceMs 와 같은 공식 — 20 초과 피해는
+        // 항상 1초 이상 걸리고, 대미지(amplitude)가 클수록 더 길어진다.
+        const durationMs = estimateHitSequenceMs(plan);
+        strike(plan.amplitude, durationMs);
         playClangSound(Math.min(1.6, plan.amplitude));
-        await sleep(320 * Math.min(1.6, plan.amplitude));
+        await sleep(durationMs);
     }
 }
 
@@ -2082,10 +2109,29 @@ async function playDeathSequence(side) {
     body.classList.add("dying");
     await sleep(770);
     body.classList.remove("dying");
-    body.classList.add("exploding");
+
+    // 폭발은 모달의 overflow: auto 클리핑 밖으로 나가야 한다("무빙이 굳이
+    // 창 안에 갇혀 있을 필요는 없어") — 슬롯 전체를 body 로 옮기고 현재
+    // 화면 좌표에 position: fixed 로 고정한 뒤, 매번 다른 무작위 방향으로
+    // 화면을 가로질러 날려버린다.
+    const rect = slot.getBoundingClientRect();
+    slot.style.position = "fixed";
+    slot.style.left = `${rect.left}px`;
+    slot.style.top = `${rect.top}px`;
+    slot.style.width = `${rect.width}px`;
+    slot.style.margin = "0";
+    slot.style.zIndex = "9999";
+    document.body.appendChild(slot);
+
+    const flyAngle = Math.random() * Math.PI * 2;
+    const flyDistance = Math.max(window.innerWidth, window.innerHeight) * 0.75;
+    slot.style.setProperty("--fly-x", `${Math.cos(flyAngle) * flyDistance}px`);
+    slot.style.setProperty("--fly-y", `${Math.sin(flyAngle) * flyDistance - 160}px`);
+
     spawnExplosionShards(slot, getComputedStyle(body).getPropertyValue("--character-color") || "#f0d9e4");
-    await sleep(430);
-    slot.classList.add("defeated");
+    slot.classList.add("exploding");
+    await sleep(650);
+    slot.remove();
 }
 
 function spawnExplosionShards(slot, color) {
@@ -2224,7 +2270,10 @@ function renderLog() {
             const cls = ["match-log-word"];
             if (side === "ai") cls.push("ai");
             if (isSpecialWord(entry)) cls.push("special");
-            return `<span class="${cls.join(" ")}">${escapeHtml(entry.word)}</span>`;
+            // 마우스 올리면 뜻(lore) 이 보이도록 — "단어 로그에 마우스 올려놓으면
+            // 설명 나오도록" 요구사항.
+            const title = escapeHtml(entry.lore || "");
+            return `<span class="${cls.join(" ")}" title="${title}">${escapeHtml(entry.word)}</span>`;
         })
         .join("");
     el.scrollLeft = el.scrollWidth;
@@ -2247,7 +2296,7 @@ async function beginPlayerTurn(turnDurationSecondsFn) {
     document.getElementById("matchSubmit").disabled = false;
     document.getElementById("matchInput").focus();
     setStatus("");
-    runTimer(turnDurationSecondsFn(match.turn), () => handleAttemptResult(null, "timeout"));
+    runTimer(turnDurationSecondsFn(match.turn), () => handlePlayerTimeout(turnDurationSecondsFn));
 }
 
 function runTimer(durationSeconds, onExpire) {
@@ -2324,59 +2373,74 @@ function validateLocalTurn(dictionary, rawWord, { previous, used } = {}) {
     return { valid: true, code: "ok", message: "통과", entry: found };
 }
 
+/**
+ * 오답/미등록/이미 사용/한방단어 금지 등 "형식상 실패"는 라운드를 끝내지 않는다.
+ * 시간도 그대로 흐르고 체력도 깎이지 않는다 — 그냥 메시지만 보여주고 같은
+ * 단어(같은 타이머)로 다시 시도할 수 있게 둔다. 오직 타임아웃(handlePlayerTimeout)
+ * 만이 라운드를 끝낸다("단어를 한번 잘못 입력해도 시간은 그대로 가고 체력도
+ * 깎이면 안돼. 라운드가 종료되는 기준은 타임아웃으로 인해 입력하지 못했을 때야").
+ */
 function submitMatchWord() {
     if (!match || match.phase !== "player") return;
     const input = document.getElementById("matchInput");
     const word = input.value.trim();
     if (!word) return;
 
-    stopTimer();
-    document.getElementById("matchInput").disabled = true;
-    document.getElementById("matchSubmit").disabled = true;
-
     const validation = validateLocalTurn(match.dictionary, word, {
         previous: match.current.word,
         used: match.used,
     });
-    void handleAttemptResult(validation, validation.valid ? "ok" : validation.code);
+
+    if (!validation.valid) {
+        setStatus(validation.message);
+        input.value = "";
+        input.focus();
+        return;
+    }
+
+    stopTimer();
+    document.getElementById("matchInput").disabled = true;
+    document.getElementById("matchSubmit").disabled = true;
+    void acceptPlayerWord(validation.entry);
 }
 
-async function handleAttemptResult(validation, code) {
-    // 이 함수는 여러 번 await 하는 동안(모듈 로드, 피격 연출 등) 사용자가 모달을
-    // 닫거나("다시 하기"로) 새 매치를 시작할 수 있다 — 그러면 전역 match 가
-    // null 이 되거나 완전히 다른 매치 객체로 바뀐다. 시작 시점의 매치를
-    // session 으로 붙잡아두고, 재개될 때마다 여전히 같은 매치인지 확인한다.
+/** 플레이어가 유효한 단어를 냈을 때 — 체인을 이어가고 AI 턴으로 넘긴다. */
+async function acceptPlayerWord(entry) {
     const session = match;
     const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
+    if (match !== session) return;
+
+    acceptWord(entry, "player");
+    match.turn += 1;
+    applyPace(paceSpeedRatio);
+    updateSpeedLabel(paceSpeedRatio);
+    renderCurrentWord();
+    document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
+    document.getElementById("matchInput").value = "";
+    match.phase = "ai";
+    setStatus("");
+    void runAiTurn(turnDurationSeconds, paceSpeedRatio);
+}
+
+/**
+ * 타임아웃(제한 시간 안에 아무 단어도 못 냄) — 유일하게 라운드를 끝내는 사건이다.
+ * 대미지를 입고(그 시점의 turn 기준), 죽지 않았다면 단어/턴/배속을 전부 처음
+ * 상태로 리셋한 뒤 새 라운드를 시작한다.
+ */
+async function handlePlayerTimeout(turnDurationSecondsFn) {
+    const session = match;
+    if (!session || session.phase === "over") return;
+    document.getElementById("matchInput").disabled = true;
+    document.getElementById("matchSubmit").disabled = true;
+
+    const { paceSpeedRatio } = await getPaceModule();
     if (match !== session) return;
     const { damageForTurn } = await getHealthModule();
     if (match !== session) return;
 
-    if (code === "ok" && validation.valid) {
-        acceptWord(validation.entry, "player");
-        match.turn += 1;
-        applyPace(paceSpeedRatio);
-        updateSpeedLabel(paceSpeedRatio);
-        renderCurrentWord();
-        document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
-        document.getElementById("matchInput").value = "";
-        match.phase = "ai";
-        setStatus("");
-        void runAiTurn(turnDurationSeconds, paceSpeedRatio);
-        return;
-    }
-
-    // 실패(형식 오류/미등록/이미 사용/연결 안 됨/시간 초과/한방단어 금지) — 대미지를 입는다.
-    // 대미지는 "라운드가 시작되기 전" 연출로 보여준다: 여기서 애니메이션이 완전히
-    // 끝날 때까지 기다린 뒤에야 다음 라운드(타이머)를 시작한다.
     const damage = damageForTurn(match.turn);
     match.playerHp = Math.max(0, match.playerHp - damage);
-    match.turn += 1; // 턴 압박은 실패해도 계속 진행된다.
-    applyPace(paceSpeedRatio);
-    updateSpeedLabel(paceSpeedRatio);
-
-    const reason = code === "timeout" ? "시간 초과!" : validation?.message ?? "실패";
-    setStatus(`${reason} (-${damage})`);
+    setStatus(`시간 초과! (-${damage})`);
 
     await playDamageSequence("player", damage);
     if (match !== session) return;
@@ -2385,15 +2449,91 @@ async function handleAttemptResult(validation, code) {
     if (match.playerHp <= 0) {
         await playDeathSequence("player");
         if (match !== session) return;
-        endMatch(false, reason);
+        endMatch(false, "시간 초과!");
         return;
     }
 
-    document.getElementById("matchInput").disabled = false;
-    document.getElementById("matchSubmit").disabled = false;
-    document.getElementById("matchInput").value = "";
-    document.getElementById("matchInput").focus();
-    runTimer(turnDurationSeconds(match.turn), () => handleAttemptResult(null, "timeout"));
+    await resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio);
+}
+
+/**
+ * 라운드 리셋: 새 무작위 시작 단어, 턴 1로 복귀, 배속/제한시간 원래대로.
+ * 재배열 모션이 끝난 뒤에야 다음 라운드가 시작된다("대미지 및 사망 모션이
+ * 끝나고 재배열 모션, 그리고 새로운 라운드 시작"). 타임아웃으로 라운드를
+ * 날린 쪽은 그 턴을 "쓴" 것으로 치고, 다음 라운드는 상대(AI) 턴부터 시작한다.
+ */
+async function resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio) {
+    const handle = await getDictionaryHandle();
+    if (match !== session) return;
+    const starter = handle.dictionary.randomStartWord();
+    if (!starter) {
+        endMatch(false, "사전에서 더 이상 시작 단어를 찾을 수 없습니다.");
+        return;
+    }
+
+    match.turn = 1;
+    match.used = new Set([starter.word]);
+    match.current = starter;
+    match.log = [{ entry: starter, side: "start" }];
+    applyPace(paceSpeedRatio);
+    updateSpeedLabel(paceSpeedRatio);
+    renderCurrentWord();
+    renderLog();
+
+    await playReorderByHp();
+    if (match !== session) return;
+
+    document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
+    match.phase = "ai";
+    void runAiTurn(turnDurationSecondsFn, paceSpeedRatio);
+}
+
+/**
+ * 라운드가 끝날 때마다 체력이 높은 순서대로 캐릭터를 재배열한다(FLIP 기법):
+ * 옮기기 전 위치를 기록해 두고, DOM 순서를 바꾼 뒤 이전 위치에서 새 위치로
+ * transform 트랜지션을 건다.
+ */
+async function playReorderByHp() {
+    const stage = document.querySelector(".character-stage");
+    if (!stage || !match) return;
+    const slots = [...stage.querySelectorAll(".character-slot")];
+    if (slots.length < 2) return;
+
+    const hpOf = (slot) => {
+        const side = slot.id.replace("character-", "");
+        return side === "player" ? match.playerHp : match.aiHp;
+    };
+
+    const sorted = [...slots].sort((a, b) => hpOf(b) - hpOf(a));
+    const sameOrder = sorted.every((slot, index) => slot === slots[index]);
+    if (sameOrder) return;
+
+    if (!getSetting("animations")) {
+        sorted.forEach((slot) => stage.appendChild(slot));
+        return;
+    }
+
+    const before = new Map(slots.map((slot) => [slot, slot.getBoundingClientRect()]));
+    sorted.forEach((slot) => stage.appendChild(slot));
+
+    for (const slot of sorted) {
+        const from = before.get(slot);
+        const to = slot.getBoundingClientRect();
+        const dx = from.left - to.left;
+        const dy = from.top - to.top;
+        if (!dx && !dy) continue;
+        slot.classList.remove("reordering");
+        slot.style.transform = `translate(${dx}px, ${dy}px)`;
+        void slot.offsetWidth; // 강제 리플로우.
+        slot.classList.add("reordering");
+        slot.style.transform = "";
+    }
+
+    await sleep(480);
+    for (const slot of sorted) {
+        slot.classList.remove("reordering");
+        slot.style.transform = "";
+    }
 }
 
 function acceptWord(entry, side) {
@@ -2412,7 +2552,7 @@ function updateSpeedLabel(paceSpeedRatio) {
 }
 
 async function runAiTurn(turnDurationSecondsFn, paceSpeedRatio) {
-    const session = match; // handleAttemptResult 와 같은 이유로 세션을 붙잡아둔다.
+    const session = match; // acceptPlayerWord/handlePlayerTimeout 와 같은 이유로 세션을 붙잡아둔다.
     const { chooseAiMove } = await getAiModule();
     if (match !== session) return;
     const duration = turnDurationSecondsFn(match.turn);

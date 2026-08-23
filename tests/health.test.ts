@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   HEALTH_MAX_DAMAGE,
+  HEAVY_HIT_MIN_MS,
+  HEAVY_HIT_AMPLITUDE_MS,
   damageForTurn,
+  estimateHitSequenceMs,
   hitPlan,
 } from '../src/game/health.js';
 
@@ -70,5 +73,38 @@ describe('hitPlan', () => {
   it('범위를 벗어난 입력은 클램프한다', () => {
     expect(hitPlan(-10)).toEqual(hitPlan(0));
     expect(hitPlan(999)).toEqual(hitPlan(50));
+  });
+});
+
+describe('estimateHitSequenceMs', () => {
+  it('light 모드는 hits * intervalMs 와 같다', () => {
+    const plan = hitPlan(10);
+    expect(estimateHitSequenceMs(plan)).toBe(plan.hits * plan.intervalMs);
+  });
+
+  it('heavy 모드는 클라이언트와 같은 공식(최소 1000ms + amplitude 에 비례)을 쓴다', () => {
+    const plan = hitPlan(50);
+    expect(estimateHitSequenceMs(plan)).toBeCloseTo(
+      HEAVY_HIT_MIN_MS + (plan.amplitude - 1) * HEAVY_HIT_AMPLITUDE_MS,
+      5,
+    );
+  });
+
+  it('20 초과(heavy) 는 항상 1000ms 이상 걸린다', () => {
+    for (const damage of [21, 25, 35, 50]) {
+      expect(estimateHitSequenceMs(hitPlan(damage))).toBeGreaterThanOrEqual(HEAVY_HIT_MIN_MS);
+    }
+  });
+
+  it('heavy 모드는 대미지(amplitude)가 클수록 더 오래 걸린다', () => {
+    const low = estimateHitSequenceMs(hitPlan(21));
+    const high = estimateHitSequenceMs(hitPlan(50));
+    expect(high).toBeGreaterThan(low);
+  });
+
+  it('항상 양수다', () => {
+    for (const damage of [0, 5, 10, 20, 21, 35, 50]) {
+      expect(estimateHitSequenceMs(hitPlan(damage))).toBeGreaterThan(0);
+    }
   });
 });

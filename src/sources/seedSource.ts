@@ -22,10 +22,23 @@ import { parse as parseYaml } from 'yaml';
 import type { RawEntry } from '../core/types.js';
 import type { DictionarySource, SourceContext } from './types.js';
 
+/**
+ * 별칭 하나. 보통은 그냥 문자열이면 되지만, 표기가 원본과 달라져(변형되어)
+ * 별도 설명이 필요한 경우엔 객체로 lore 를 따로 준다 — 예: 원신 라이덴쇼군의
+ * 별칭 "바알"은 아르스 고에티아의 "바엘"과 철자가 다른 변형 표기이므로,
+ * 자동 병합(정확히 같은 문자열일 때만 lore 가 합쳐짐)에 기대지 않고 이렇게
+ * 직접 그 관계를 lore 에 적어 둔다.
+ */
+export interface AliasEntry {
+  word: string;
+  lore?: string;
+  tags?: string[];
+}
+
 export interface SeedEntry {
   word: string;
   lore?: string;
-  aliases?: string[];
+  aliases?: Array<string | AliasEntry>;
   tags?: string[];
 }
 
@@ -82,7 +95,17 @@ export function* expandSeedEntry(
 
   yield { ...base, word: normalized.word };
   for (const alias of normalized.aliases ?? []) {
-    yield { ...base, word: alias, extra: { aliasOf: normalized.word } };
+    const aliasEntry: AliasEntry = typeof alias === 'string' ? { word: alias } : alias;
+    if (!aliasEntry.word) continue;
+    const aliasLore = aliasEntry.lore ?? lore;
+    const aliasTags = aliasEntry.tags ?? normalized.tags;
+    yield {
+      source,
+      ...(aliasLore ? { lore: aliasLore } : {}),
+      ...(aliasTags ? { tags: aliasTags } : {}),
+      word: aliasEntry.word,
+      extra: { aliasOf: normalized.word },
+    };
   }
 }
 

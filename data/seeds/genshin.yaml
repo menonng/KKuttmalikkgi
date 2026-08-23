@@ -11,7 +11,15 @@ entries:
     aliases: [모락스]
     tags: [character, archon]
   - word: 라이덴쇼군
-    aliases: [바알, 에이]
+    aliases:
+      # "바알"은 라이덴쇼군의 별칭이지만, 아르스 고에티아의 "바엘"과는 철자가
+      # 다른 변형 표기다(정확히 같은 문자열이 아니라 자동 병합되지 않으므로
+      # 여기서 직접 그 관계를 밝혀 둔다) — "고유명사 중 솔로몬의 악마에서
+      # 따왔지만 변형된 명칭은 구분해야" 요구사항 대응.
+      - word: 바알
+        lore: 원신 · 라이덴쇼군의 다른 이름. 아르스 고에티아의 '바엘'과 발음은 비슷하지만 표기가 다른 변형명.
+        tags: [character, archon, goetia-variant]
+      - 에이
     tags: [character, archon]
   - word: 나히다
     aliases: [부에르]

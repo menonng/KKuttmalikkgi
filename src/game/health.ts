@@ -59,3 +59,26 @@ export function hitPlan(damage: number): HitPlan {
   const amplitude = 1 + t * 1.8;
   return { heavy: true, hits: 1, intervalMs: 0, amplitude };
 }
+
+/** 사망 연출(발작 -> 적색화 -> 폭발) 총 재생 시간(ms). 클라이언트 CSS 타이밍과 맞춰져 있다. */
+export const DEATH_SEQUENCE_MS = 1_420;
+
+/**
+ * 피격 연출이 끝나는 데 걸리는 시간(ms) — 클라이언트가 실제로 재생하는
+ * 시간과 같은 공식이다(web/index.html 의 playDamageSequence 참고).
+ *
+ * 멀티플레이 서버는 DOM 애니메이션을 볼 수 없으므로, 각 클라이언트가 알아서
+ * 재생하는 연출이 "얼마나 걸릴지"를 여기서 미리 계산해 그만큼 다음 라운드
+ * 시작을 늦춘다 — 그래야 모든 참가자 화면에서 연출이 끝난 뒤 다음 라운드가
+ * 시작된다("라운드 종료 후 연출이 모두 진행된 뒤 새 라운드" 요구사항).
+ */
+/** heavy 타격 최소 재생 시간(ms) — "20점을 넘어가면 모션 하나에 1초 이상". */
+export const HEAVY_HIT_MIN_MS = 1_000;
+/** amplitude 가 커질수록(대미지가 클수록) 최소치 위로 더 늘어나는 폭(ms). */
+export const HEAVY_HIT_AMPLITUDE_MS = 500;
+
+export function estimateHitSequenceMs(plan: HitPlan): number {
+  if (!plan.heavy) return plan.hits * plan.intervalMs;
+  // amplitude 는 1(대미지 21) ~ 2.8(대미지 50) 범위 -> 1000ms ~ 1900ms.
+  return HEAVY_HIT_MIN_MS + (plan.amplitude - 1) * HEAVY_HIT_AMPLITUDE_MS;
+}
