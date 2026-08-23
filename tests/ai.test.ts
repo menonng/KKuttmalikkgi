@@ -59,9 +59,27 @@ describe('chooseAiMove', () => {
     expect(move?.word).toBe('나무');
   });
 
-  it('안전한 후보가 하나도 없으면 한방단어라도 낸다', () => {
+  it('한방단어가 규칙상 금지(기본값)면 안전한 후보가 없을 때 null 을 돌려준다', () => {
     const onlyDeadEnd = DictionaryStore.fromEntries(['가나', '나비'].map(entry));
     const move = chooseAiMove(onlyDeadEnd, '가나', { difficulty: 'hard', exclude: new Set() });
+    expect(move).toBeNull();
+  });
+
+  it('allowDeadEnd: true 면 안전한 후보가 없을 때 한방단어라도 낸다', () => {
+    const onlyDeadEnd = DictionaryStore.fromEntries(['가나', '나비'].map(entry));
+    const move = chooseAiMove(onlyDeadEnd, '가나', {
+      difficulty: 'hard',
+      exclude: new Set(),
+      allowDeadEnd: true,
+    });
     expect(move?.word).toBe('나비');
+  });
+
+  it('allowDeadEnd: false(기본)면 easy 난이도도 한방단어를 피한다', () => {
+    const dictionary = DictionaryStore.fromEntries(['가나', '나비', '나무', '무지개', '개미'].map(entry));
+    for (let i = 0; i < 20; i += 1) {
+      const move = chooseAiMove(dictionary, '가나', { difficulty: 'easy', exclude: new Set() });
+      expect(move?.word).not.toBe('나비');
+    }
   });
 });

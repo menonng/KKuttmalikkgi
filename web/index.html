@@ -371,6 +371,14 @@
         border: 4px solid var(--line);
         border-radius: 20px;
         box-shadow: 0 10px 0 var(--line);
+        transition: width 160ms ease, max-height 160ms ease;
+    }
+
+    /* AI 대전은 캐릭터/체력바/단어 로그가 한 화면에 다 들어가야 해서
+       일반 모달보다 훨씬 넓게 쓴다("분할 화면을 넓히거나 새 창으로" 요구사항 대응). */
+    .modal.match-modal {
+        width: min(1360px, 97vw);
+        max-height: min(900px, 95vh);
     }
 
     .modal-header {
@@ -486,6 +494,36 @@
         gap: 16px;
         padding: 14px 0;
         border-bottom: 1px solid #d5d5d5;
+    }
+
+    .profile-section {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #d5d5d5;
+    }
+
+    .profile-color-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+        max-width: 320px;
+    }
+
+    .profile-color-swatch {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 3px solid var(--line);
+        cursor: pointer;
+        transition: transform 100ms ease;
+    }
+
+    .profile-color-swatch:hover {
+        transform: scale(1.1);
+    }
+
+    .profile-color-swatch.selected {
+        box-shadow: 0 0 0 3px var(--red);
     }
 
     .toggle {
@@ -684,6 +722,227 @@
         cursor: pointer;
         font-size: 12px;
         font-weight: 800;
+    }
+
+    /* =========================================================
+       CHARACTERS — 단어 로그 하단에 배치되는 두 캐릭터와 체력바.
+       ========================================================= */
+
+    .character-stage {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .character-slot {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 18px 10px 14px;
+        border: 3px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface-soft);
+        overflow: visible;
+    }
+
+    .character-slot.defeated {
+        opacity: 0.35;
+        filter: grayscale(1);
+    }
+
+    .character-name {
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 8px;
+    }
+
+    .character-rig {
+        position: relative;
+        width: 84px;
+        height: 84px;
+    }
+
+    /* 끝이 약간 둥근 정사각형 + 적절한 위치의 눈 2개. */
+    .character-body {
+        position: absolute;
+        inset: 0;
+        border-radius: 26%;
+        border: 4px solid var(--line);
+        background: var(--character-color, #f0d9e4);
+        box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+        --hit-amp: 1;
+    }
+
+    .character-eye {
+        position: absolute;
+        top: 34%;
+        width: 16%;
+        height: 16%;
+        border-radius: 50%;
+        background: var(--character-eye-color, #ffffff);
+        border: 2px solid var(--line);
+    }
+
+    .character-eye::after {
+        content: "";
+        position: absolute;
+        top: 30%;
+        left: 30%;
+        width: 45%;
+        height: 45%;
+        border-radius: 50%;
+        background: var(--line);
+    }
+
+    .character-eye.left {
+        left: 26%;
+    }
+
+    .character-eye.right {
+        right: 26%;
+    }
+
+    .character-body.hit {
+        animation: character-recoil 220ms ease-out;
+    }
+
+    @keyframes character-recoil {
+        0% {
+            transform: translate(0, 0) rotate(0deg);
+            filter: brightness(1);
+        }
+        30% {
+            transform: translate(calc(3px * var(--hit-amp, 1)), calc(5px * var(--hit-amp, 1)))
+                rotate(calc(-3deg * var(--hit-amp, 1)));
+            filter: brightness(1.7) saturate(1.3);
+        }
+        60% {
+            transform: translate(calc(-2px * var(--hit-amp, 1)), calc(1px * var(--hit-amp, 1)))
+                rotate(calc(2deg * var(--hit-amp, 1)));
+        }
+        100% {
+            transform: translate(0, 0) rotate(0deg);
+            filter: brightness(1);
+        }
+    }
+
+    /* 굉장히 허접하고 대충 만든 느낌이지만 아주 역동적인 발작 -> 적색화 -> 폭발. */
+    .character-body.dying {
+        animation:
+            character-death-jitter 90ms steps(1) 9,
+            character-death-redden 760ms ease-in forwards;
+    }
+
+    @keyframes character-death-jitter {
+        0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        11% { transform: translate(-7px, 4px) rotate(-11deg) scale(1.03); }
+        22% { transform: translate(8px, -5px) rotate(13deg) scale(0.97); }
+        33% { transform: translate(-9px, 6px) rotate(-15deg) scale(1.05); }
+        44% { transform: translate(10px, -4px) rotate(12deg) scale(0.95); }
+        55% { transform: translate(-8px, 5px) rotate(-13deg) scale(1.04); }
+        66% { transform: translate(9px, -6px) rotate(14deg) scale(0.96); }
+        77% { transform: translate(-10px, 3px) rotate(-16deg) scale(1.06); }
+        88% { transform: translate(6px, -4px) rotate(9deg) scale(0.98); }
+        100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    }
+
+    @keyframes character-death-redden {
+        0% { filter: brightness(1) saturate(1); }
+        100% {
+            filter: brightness(1.5) saturate(2.4);
+            background: #ff2b2b !important;
+        }
+    }
+
+    .character-body.exploding {
+        animation: character-explode 420ms cubic-bezier(0.34, 1.8, 0.5, 1) forwards;
+    }
+
+    @keyframes character-explode {
+        0% { transform: scale(1) rotate(0deg); opacity: 1; }
+        35% { transform: scale(1.35) rotate(-12deg); opacity: 1; }
+        100% { transform: scale(2.8) rotate(45deg) translateY(-48px); opacity: 0; }
+    }
+
+    .character-shard {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        border: 2px solid var(--line);
+        background: var(--character-color, #f0d9e4);
+        border-radius: 3px;
+        pointer-events: none;
+        animation: character-shard-fly 480ms ease-out forwards;
+    }
+
+    @keyframes character-shard-fly {
+        0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% {
+            transform: translate(calc(-50% + var(--shard-x, 0px)), calc(-50% + var(--shard-y, 0px))) scale(0.2);
+            opacity: 0;
+        }
+    }
+
+    .character-hammer {
+        position: absolute;
+        top: -34px;
+        right: -6px;
+        font-size: 30px;
+        transform-origin: 80% 15%;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .character-hammer.swing {
+        animation: hammer-swing 240ms ease-in;
+    }
+
+    @keyframes hammer-swing {
+        0% { transform: rotate(-14deg) scale(1); opacity: 0; }
+        25% { opacity: 1; }
+        55% {
+            transform: rotate(calc(58deg * var(--hit-amp, 1))) scale(calc(1 + 0.18 * (var(--hit-amp, 1) - 1)));
+        }
+        100% { transform: rotate(-14deg) scale(1); opacity: 0; }
+    }
+
+    .character-hp-track {
+        margin-top: 12px;
+        width: 100%;
+        max-width: 160px;
+        height: 12px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        overflow: hidden;
+    }
+
+    .character-hp-fill {
+        height: 100%;
+        background: #4caf50;
+        transition: width 260ms ease, background 260ms ease;
+    }
+
+    .character-hp-fill.mid {
+        background: #ffb020;
+    }
+
+    .character-hp-fill.low {
+        background: var(--red);
+    }
+
+    .character-hp-label {
+        margin-top: 4px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--muted);
     }
 
     /* =========================================================
@@ -1047,6 +1306,10 @@
 
 </div>
 
+<!-- 커스텀 배경음악 재생용 — 설정에서 업로드한 파일을 여기로 재생한다.
+     BgmController(script 아래) 가 제어한다. -->
+<audio id="customBgmPlayer" loop></audio>
+
 <!-- ==========================================================
      MODAL
      ========================================================== -->
@@ -1358,60 +1621,261 @@ function getAiModule() {
 }
 
 const DIFFICULTY_LABEL = { easy: "쉬움", normal: "보통", hard: "어려움", insane: "광기" };
-const MATCH_START_HP = 3;
 
 /** 현재 진행 중인 매치의 전체 상태. 모달이 닫히면 stopMatch() 로 정리된다. */
 let match = null;
 
-/** 절차적 BGM 시퀀서 — 실제 오디오 트랙 없이 Web Audio 로 짧은 아르페지오를 반복 재생한다. */
+/* ============================================================
+   설정 & 프로필 저장소
+
+   토글은 전부 "켜짐"/"꺼짐" 으로 통일한다(ON/OFF 표기 혼용 금지).
+   ============================================================ */
+
+const SETTINGS_KEY = "kkuttmal:settings";
+const DEFAULT_SETTINGS = {
+    oneShotWords: false,   // 한방단어 허용
+    soundEffects: true,    // 타격음 등 효과음
+    bgmEnabled: true,      // 배경음악 재생
+    animations: true,      // 피격/사망 등 연출
+    customBgmEnabled: false, // 업로드한 파일을 배경음악으로 사용
+};
+
+let currentSettings = loadSettings();
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    } catch {
+        return { ...DEFAULT_SETTINGS };
+    }
+}
+
+function getSetting(key) {
+    return currentSettings[key];
+}
+
+function setSetting(key, value) {
+    currentSettings = { ...currentSettings, [key]: value };
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(currentSettings));
+    } catch {
+        // 저장 실패는 무시 — 이번 세션 동안은 메모리 값으로 계속 동작한다.
+    }
+    onSettingChanged(key, value);
+}
+
+function onSettingChanged(key, value) {
+    const customRow = document.getElementById("customBgmUploadRow");
+    if (key === "customBgmEnabled" && customRow) {
+        customRow.style.display = value ? "flex" : "none";
+    }
+    // 대전 도중 배경음악 관련 설정을 바꾸면 즉시 반영한다.
+    if ((key === "bgmEnabled" || key === "customBgmEnabled") && match) {
+        bgm.stop();
+        bgm.start();
+    }
+}
+
+const PROFILE_KEY = "kkuttmal:profile";
+
+function loadProfile() {
+    try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveProfile(profile) {
+    try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    } catch {
+        // 무시 — 이번 세션 동안은 메모리 값으로 계속 동작한다.
+    }
+}
+
+let currentProfile = loadProfile();
+
+/** AI 대전에서 쓸 내 캐릭터 색. 프로필에서 고르지 않았으면 최초 1회 무작위 배정 후 저장한다. */
+async function getMyCharacterColor() {
+    if (currentProfile.characterColor) return currentProfile.characterColor;
+    const { pickRandomAvailableColor } = await getColorModule();
+    const picked = pickRandomAvailableColor(new Set());
+    currentProfile = { ...currentProfile, characterColor: picked.hex };
+    saveProfile(currentProfile);
+    return currentProfile.characterColor;
+}
+
+function setMyCharacterColor(hex) {
+    currentProfile = { ...currentProfile, characterColor: hex };
+    saveProfile(currentProfile);
+}
+
+let colorModulePromise = null;
+function getColorModule() {
+    if (!colorModulePromise) colorModulePromise = import("./dist/game/characterColor.js");
+    return colorModulePromise;
+}
+
+let healthModulePromise = null;
+function getHealthModule() {
+    if (!healthModulePromise) healthModulePromise = import("./dist/game/health.js");
+    return healthModulePromise;
+}
+
+/* ============================================================
+   사운드 — 절차적 BGM(다악기) + 타격음("깡!") 합성.
+   외부 오디오 에셋은 쓰지 않는다(제공된 트랙이 없고, 라이선스 없는
+   음원을 넣을 수 없다). 전부 Web Audio 오실레이터/노이즈로 만든다.
+   ============================================================ */
+
+/** 효과음 전용 공유 오디오 컨텍스트 — BGM 이 꺼져 있어도 타격음은 나야 한다. */
+let sfxContext = null;
+function getSfxContext() {
+    if (!sfxContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        sfxContext = new AudioContextClass();
+    }
+    if (sfxContext.state === "suspended") sfxContext.resume();
+    return sfxContext;
+}
+
+/** 모루(anvil)에 망치가 부딪히는 듯한 "깡!" 소리 — 금속성 톤 + 임펄스 노이즈. */
+function playClangSound(amplitude = 1) {
+    if (!getSetting("soundEffects")) return;
+    const ctx = getSfxContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const amp = Math.min(1.6, Math.max(0.3, amplitude));
+
+    [1046.5, 1318.5].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = i === 0 ? "square" : "triangle";
+        osc.frequency.value = freq * (1 + (Math.random() - 0.5) * 0.02);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.12 * amp, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    });
+
+    const bufferSize = Math.floor(ctx.sampleRate * 0.05);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 2500;
+    filter.Q.value = 1.2;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.2 * amp, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+    noise.connect(filter).connect(noiseGain).connect(ctx.destination);
+    noise.start(now);
+}
+
+/**
+ * 절차적 BGM — 리드(아르페지오) + 베이스 + 하이햇, 세 목소리로 짠다.
+ * 단조로운 삐-소리 하나였던 이전 버전보다 훨씬 풍성하다.
+ */
 class ProceduralBgm {
     constructor() {
         this.ctx = null;
         this.muted = false;
         this.baseIntervalMs = 260;
         this.speedRatio = 1;
-        this.timer = null;
-        // 단조 5음 스케일 아르페지오 (라 도 레 미 솔, A minor pentatonic 근처).
-        this.notes = [220.0, 261.63, 293.66, 329.63, 392.0, 329.63, 293.66, 261.63];
-        this.step = 0;
+        this.leadTimer = null;
+        this.bassTimer = null;
+        this.leadStep = 0;
+        this.bassStep = 0;
+        // 리드: 아르페지오(라 도 레 미 솔 미 레 도, A minor 근방).
+        this.leadNotes = [220.0, 261.63, 293.66, 329.63, 392.0, 329.63, 293.66, 261.63];
+        // 베이스: 리드보다 한 옥타브 아래, 코드 진행(라-파-도-솔).
+        this.bassNotes = [110.0, 87.31, 130.81, 98.0];
+        this.hihatEvery = 4;
     }
 
     start() {
         if (!this.ctx) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContextClass) return; // 지원 안 하는 브라우저 — 조용히 건너뛴다.
+            if (!AudioContextClass) return;
             this.ctx = new AudioContextClass();
         }
         if (this.ctx.state === "suspended") this.ctx.resume();
-        this.scheduleNext();
+        this.scheduleLead();
+        this.scheduleBass();
     }
 
-    scheduleNext() {
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-            this.playStep();
-            this.scheduleNext();
+    scheduleLead() {
+        clearTimeout(this.leadTimer);
+        this.leadTimer = setTimeout(() => {
+            this.playLeadStep();
+            this.scheduleLead();
         }, this.baseIntervalMs / this.speedRatio);
     }
 
-    playStep() {
-        if (this.muted || !this.ctx) return;
-        const freq = this.notes[this.step % this.notes.length];
-        this.step += 1;
-
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.05, this.ctx.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.18);
-        osc.connect(gain).connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.2);
+    scheduleBass() {
+        clearTimeout(this.bassTimer);
+        this.bassTimer = setTimeout(() => {
+            this.playBassStep();
+            this.scheduleBass();
+        }, (this.baseIntervalMs * 2) / this.speedRatio);
     }
 
-    /** 배속을 갱신한다 — paceSpeedRatio() 값을 그대로 넘기면 된다. */
+    playLeadStep() {
+        if (this.muted || !this.ctx) return;
+        const freq = this.leadNotes[this.leadStep % this.leadNotes.length];
+        this.leadStep += 1;
+        this.pluck(freq, "triangle", 0.05, 0.18);
+        if (this.leadStep % this.hihatEvery === 0) this.hihat();
+    }
+
+    playBassStep() {
+        if (this.muted || !this.ctx) return;
+        const freq = this.bassNotes[this.bassStep % this.bassNotes.length];
+        this.bassStep += 1;
+        this.pluck(freq, "sine", 0.09, 0.35);
+    }
+
+    pluck(freq, type, peakGain, decaySeconds) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(peakGain, this.ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + decaySeconds);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + decaySeconds + 0.05);
+    }
+
+    hihat() {
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.03);
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.value = 6000;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.03);
+        noise.connect(filter).connect(gain).connect(this.ctx.destination);
+        noise.start();
+    }
+
     setSpeedRatio(ratio) {
         this.speedRatio = ratio;
     }
@@ -1421,8 +1885,10 @@ class ProceduralBgm {
     }
 
     stop() {
-        clearTimeout(this.timer);
-        this.timer = null;
+        clearTimeout(this.leadTimer);
+        clearTimeout(this.bassTimer);
+        this.leadTimer = null;
+        this.bassTimer = null;
         if (this.ctx) {
             this.ctx.close().catch(() => {});
             this.ctx = null;
@@ -1430,15 +1896,218 @@ class ProceduralBgm {
     }
 }
 
-const bgm = new ProceduralBgm();
+/**
+ * 배경음악 컨트롤러 — 절차적 합성과, 설정에서 업로드한 커스텀 오디오 파일 중
+ * 하나를 골라 재생한다. 배속(playbackRate)은 두 경우 모두 파도타기 배속과
+ * 같은 비율로 걸린다. 업로드 파일은 이 브라우저 세션에서만 유지된다(재생 목록에
+ * 영속 저장하지 않음 — localStorage 는 대용량 바이너리에 적합하지 않다).
+ */
+class BgmController {
+    constructor() {
+        this.procedural = new ProceduralBgm();
+        this.audioEl = document.getElementById("customBgmPlayer");
+        this.customReady = false;
+        this.speedRatio = 1;
+        this.muted = false;
+    }
+
+    useCustom() {
+        return getSetting("customBgmEnabled") && this.customReady;
+    }
+
+    start() {
+        if (!getSetting("bgmEnabled")) return;
+        if (this.useCustom()) {
+            this.audioEl.currentTime = 0;
+            this.audioEl.playbackRate = Math.min(4, this.speedRatio);
+            this.audioEl.muted = this.muted;
+            this.audioEl.play().catch(() => {});
+        } else {
+            this.procedural.start();
+        }
+    }
+
+    stop() {
+        this.procedural.stop();
+        if (this.audioEl) this.audioEl.pause();
+    }
+
+    setSpeedRatio(ratio) {
+        this.speedRatio = ratio;
+        this.procedural.setSpeedRatio(ratio);
+        // 브라우저별 playbackRate 상한(대략 4~16배)을 넘지 않게 클램프한다.
+        if (this.audioEl) this.audioEl.playbackRate = Math.min(4, ratio);
+    }
+
+    setMuted(muted) {
+        this.muted = muted;
+        this.procedural.setMuted(muted);
+        if (this.audioEl) this.audioEl.muted = muted;
+    }
+
+    /** 업로드한 파일을 로드한다. 재생 가능하면 true, 형식을 지원하지 않으면 false. */
+    loadCustomFile(file) {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(file);
+            this.customReady = false;
+            const cleanup = () => {
+                this.audioEl.removeEventListener("canplaythrough", onReady);
+                this.audioEl.removeEventListener("error", onError);
+            };
+            const onReady = () => { this.customReady = true; cleanup(); resolve(true); };
+            const onError = () => { this.customReady = false; cleanup(); resolve(false); };
+            this.audioEl.addEventListener("canplaythrough", onReady, { once: true });
+            this.audioEl.addEventListener("error", onError, { once: true });
+            this.audioEl.loop = true;
+            this.audioEl.src = url;
+            this.audioEl.load();
+        });
+    }
+}
+
+const bgm = new BgmController();
 
 /** entry.sources 가 일반 어휘(korean_dict)만이 아니면 "특수 단어"로 취급한다. */
 function isSpecialWord(entry) {
     return entry.sources.some((source) => source !== "korean_dict");
 }
 
+/* ============================================================
+   캐릭터 — 단어 로그 하단에 배치되는 두 캐릭터. 끝이 둥근 정사각형 몸통에
+   눈 2개, 그 아래 체력바. 피격/사망 연출은 순수 함수(damageForTurn/hitPlan,
+   src/game/health.ts)가 정한 파라미터를 DOM 애니메이션으로 재생한다.
+   ============================================================ */
+
+function renderCharacterMarkup(side, name) {
+    return `
+        <div class="character-slot" id="character-${side}">
+            <div class="character-name">${escapeHtml(name)}</div>
+            <div class="character-rig">
+                <span class="character-hammer" id="hammer-${side}">🔨</span>
+                <div class="character-body" id="body-${side}">
+                    <span class="character-eye left"></span>
+                    <span class="character-eye right"></span>
+                </div>
+            </div>
+            <div class="character-hp-track">
+                <div class="character-hp-fill" id="hpfill-${side}"></div>
+            </div>
+            <div class="character-hp-label" id="hplabel-${side}">100 / 100</div>
+        </div>
+    `;
+}
+
+function applyCharacterColor(side, hex, eyeColor) {
+    const body = document.getElementById(`body-${side}`);
+    if (!body) return;
+    body.style.setProperty("--character-color", hex);
+    body.style.setProperty("--character-eye-color", eyeColor || "#ffffff");
+}
+
+function updateCharacterHp(side, hp, maxHp) {
+    const fill = document.getElementById(`hpfill-${side}`);
+    const label = document.getElementById(`hplabel-${side}`);
+    if (!fill || !label) return;
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    fill.style.width = `${ratio * 100}%`;
+    fill.classList.toggle("mid", ratio <= 0.5 && ratio > 0.2);
+    fill.classList.toggle("low", ratio <= 0.2);
+    label.textContent = `${Math.max(0, Math.round(hp))} / ${maxHp}`;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 피격 연출 한 번. hitPlan 이 정한 대로 20 이하 대미지는 망치로 빠르게 여러 번,
+ * 20 초과는 크고 세게 한 번 때린다. 애니메이션이 완전히 끝날 때까지 기다렸다가
+ * resolve 한다 — 이걸 기다린 뒤에야 다음 라운드가 시작된다.
+ */
+async function playDamageSequence(side, damage) {
+    const { hitPlan } = await getHealthModule();
+    const plan = hitPlan(damage);
+    const animationsOn = getSetting("animations");
+    const body = document.getElementById(`body-${side}`);
+    const hammer = document.getElementById(`hammer-${side}`);
+
+    if (!animationsOn) {
+        playClangSound(1);
+        await sleep(150);
+        return;
+    }
+
+    const strike = (amplitude) => {
+        if (body) {
+            body.style.setProperty("--hit-amp", amplitude);
+            body.classList.remove("hit");
+            void body.offsetWidth; // 강제 리플로우 — 애니메이션 재시작.
+            body.classList.add("hit");
+        }
+        if (hammer) {
+            hammer.style.setProperty("--hit-amp", amplitude);
+            hammer.classList.remove("swing");
+            void hammer.offsetWidth;
+            hammer.classList.add("swing");
+        }
+    };
+
+    if (!plan.heavy) {
+        for (let i = 0; i < plan.hits; i += 1) {
+            strike(plan.amplitude);
+            playClangSound(0.6 + i * 0.05);
+            await sleep(plan.intervalMs);
+        }
+    } else {
+        strike(plan.amplitude);
+        playClangSound(Math.min(1.6, plan.amplitude));
+        await sleep(320 * Math.min(1.6, plan.amplitude));
+    }
+}
+
+/** 체력이 0 이하가 됐을 때: 허접하지만 역동적인 발작 -> 적색화 -> 폭발. */
+async function playDeathSequence(side) {
+    const slot = document.getElementById(`character-${side}`);
+    const body = document.getElementById(`body-${side}`);
+    const animationsOn = getSetting("animations");
+
+    playClangSound(1.8);
+
+    if (!animationsOn || !body || !slot) {
+        await sleep(200);
+        if (slot) slot.classList.add("defeated");
+        return;
+    }
+
+    body.classList.add("dying");
+    await sleep(770);
+    body.classList.remove("dying");
+    body.classList.add("exploding");
+    spawnExplosionShards(slot, getComputedStyle(body).getPropertyValue("--character-color") || "#f0d9e4");
+    await sleep(430);
+    slot.classList.add("defeated");
+}
+
+function spawnExplosionShards(slot, color) {
+    const rig = slot.querySelector(".character-rig");
+    if (!rig) return;
+    for (let i = 0; i < 7; i += 1) {
+        const shard = document.createElement("span");
+        shard.className = "character-shard";
+        const angle = (Math.PI * 2 * i) / 7 + Math.random() * 0.6;
+        const distance = 40 + Math.random() * 30;
+        shard.style.setProperty("--shard-x", `${Math.cos(angle) * distance}px`);
+        shard.style.setProperty("--shard-y", `${Math.sin(angle) * distance}px`);
+        shard.style.background = color;
+        rig.appendChild(shard);
+        setTimeout(() => shard.remove(), 520);
+    }
+}
+
 async function startAiMatch(difficulty) {
     const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
+    const { MAX_HP } = await getHealthModule();
+    const { paletteColorOf } = await getColorModule();
     const handle = await getDictionaryHandle();
     const starter = handle.dictionary.randomStartWord();
 
@@ -1447,11 +2116,18 @@ async function startAiMatch(difficulty) {
         return;
     }
 
+    const myColor = paletteColorOf(await getMyCharacterColor());
+    // AI 는 내 색과 겹치지 않는 색을 무작위로 받는다(로비 색상 규칙과 같은 원리).
+    const { pickRandomAvailableColor } = await getColorModule();
+    const aiColor = pickRandomAvailableColor(new Set([myColor.hex])) ?? paletteColorOf("#1d2327");
+
     match = {
         difficulty,
         dictionary: handle.dictionary,
         turn: 1,
-        hp: MATCH_START_HP,
+        maxHp: MAX_HP,
+        playerHp: MAX_HP,
+        aiHp: MAX_HP,
         used: new Set([starter.word]),
         current: starter,
         log: [{ entry: starter, side: "start" }],
@@ -1459,8 +2135,11 @@ async function startAiMatch(difficulty) {
         timerId: null,
         deadline: 0,
         muted: false,
+        playerColor: myColor,
+        aiColor,
     };
 
+    document.querySelector(".modal")?.classList.add("match-modal");
     renderMatchScreen();
     bgm.start();
     applyPace(paceSpeedRatio);
@@ -1482,7 +2161,6 @@ function renderMatchScreen() {
         <div class="modal-panel">
             <div class="match-hud">
                 <span id="matchTurnNumber">턴 ${match.turn}</span>
-                <span class="match-hp" id="matchHp"></span>
                 <span class="match-speed" id="matchSpeed">1.0배속</span>
                 <button class="match-bgm-toggle" id="matchBgmToggle">🔊 BGM</button>
             </div>
@@ -1503,6 +2181,12 @@ function renderMatchScreen() {
             </div>
 
             <div class="match-log" id="matchLog"></div>
+
+            <div class="character-stage">
+                ${renderCharacterMarkup("player", "플레이어")}
+                ${renderCharacterMarkup("ai", `AI · ${DIFFICULTY_LABEL[match.difficulty]}`)}
+            </div>
+
             <div id="matchResult"></div>
         </div>
     `;
@@ -1517,17 +2201,12 @@ function renderMatchScreen() {
         if (event.key === "Enter") submitMatchWord();
     });
 
-    renderHp();
+    applyCharacterColor("player", match.playerColor.hex, match.playerColor.eyeColor);
+    applyCharacterColor("ai", match.aiColor.hex, match.aiColor.eyeColor);
+    updateCharacterHp("player", match.playerHp, match.maxHp);
+    updateCharacterHp("ai", match.aiHp, match.maxHp);
     renderCurrentWord();
     renderLog();
-}
-
-function renderHp() {
-    const el = document.getElementById("matchHp");
-    if (!el) return;
-    el.innerHTML = Array.from({ length: MATCH_START_HP })
-        .map((_, i) => `<span class="${i < match.hp ? "" : "lost"}">♥</span>`)
-        .join("");
 }
 
 function renderCurrentWord() {
@@ -1634,6 +2313,14 @@ function validateLocalTurn(dictionary, rawWord, { previous, used } = {}) {
             entry: found,
         };
     }
+    if (!getSetting("oneShotWords") && dictionary.isDeadEnd(found.word)) {
+        return {
+            valid: false,
+            code: "one_shot_blocked",
+            message: "한방단어는 허용되지 않습니다(설정에서 켤 수 있어요).",
+            entry: found,
+        };
+    }
     return { valid: true, code: "ok", message: "통과", entry: found };
 }
 
@@ -1655,7 +2342,15 @@ function submitMatchWord() {
 }
 
 async function handleAttemptResult(validation, code) {
+    // 이 함수는 여러 번 await 하는 동안(모듈 로드, 피격 연출 등) 사용자가 모달을
+    // 닫거나("다시 하기"로) 새 매치를 시작할 수 있다 — 그러면 전역 match 가
+    // null 이 되거나 완전히 다른 매치 객체로 바뀐다. 시작 시점의 매치를
+    // session 으로 붙잡아두고, 재개될 때마다 여전히 같은 매치인지 확인한다.
+    const session = match;
     const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
+    if (match !== session) return;
+    const { damageForTurn } = await getHealthModule();
+    if (match !== session) return;
 
     if (code === "ok" && validation.valid) {
         acceptWord(validation.entry, "player");
@@ -1663,7 +2358,6 @@ async function handleAttemptResult(validation, code) {
         applyPace(paceSpeedRatio);
         updateSpeedLabel(paceSpeedRatio);
         renderCurrentWord();
-        renderHp();
         document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
         document.getElementById("matchInput").value = "";
         match.phase = "ai";
@@ -1672,17 +2366,25 @@ async function handleAttemptResult(validation, code) {
         return;
     }
 
-    // 실패(형식 오류/미등록/이미 사용/연결 안 됨/시간 초과) — 체력을 깎고 같은 단어에서 다시 시도.
-    match.hp -= 1;
+    // 실패(형식 오류/미등록/이미 사용/연결 안 됨/시간 초과/한방단어 금지) — 대미지를 입는다.
+    // 대미지는 "라운드가 시작되기 전" 연출로 보여준다: 여기서 애니메이션이 완전히
+    // 끝날 때까지 기다린 뒤에야 다음 라운드(타이머)를 시작한다.
+    const damage = damageForTurn(match.turn);
+    match.playerHp = Math.max(0, match.playerHp - damage);
     match.turn += 1; // 턴 압박은 실패해도 계속 진행된다.
     applyPace(paceSpeedRatio);
     updateSpeedLabel(paceSpeedRatio);
-    renderHp();
 
     const reason = code === "timeout" ? "시간 초과!" : validation?.message ?? "실패";
-    setStatus(reason);
+    setStatus(`${reason} (-${damage})`);
 
-    if (match.hp <= 0) {
+    await playDamageSequence("player", damage);
+    if (match !== session) return;
+    updateCharacterHp("player", match.playerHp, match.maxHp);
+
+    if (match.playerHp <= 0) {
+        await playDeathSequence("player");
+        if (match !== session) return;
         endMatch(false, reason);
         return;
     }
@@ -1710,7 +2412,9 @@ function updateSpeedLabel(paceSpeedRatio) {
 }
 
 async function runAiTurn(turnDurationSecondsFn, paceSpeedRatio) {
+    const session = match; // handleAttemptResult 와 같은 이유로 세션을 붙잡아둔다.
     const { chooseAiMove } = await getAiModule();
+    if (match !== session) return;
     const duration = turnDurationSecondsFn(match.turn);
 
     // 실제 오디오/타이머 배속과 같은 비율로 AI의 "생각 시간"도 짧아진다 —
@@ -1719,16 +2423,22 @@ async function runAiTurn(turnDurationSecondsFn, paceSpeedRatio) {
     runTimer(duration, () => {}); // 시각적 타이머만 계속 보여준다(AI 는 타임아웃으로 지지 않음).
 
     await new Promise((resolve) => setTimeout(resolve, thinkMs));
-    if (!match || match.phase !== "ai") return;
+    if (match !== session || match.phase !== "ai") return;
 
     const move = chooseAiMove(match.dictionary, match.current.word, {
         difficulty: match.difficulty,
         exclude: match.used,
+        allowDeadEnd: getSetting("oneShotWords"),
     });
 
     stopTimer();
 
     if (!move) {
+        // AI 가 이을 단어를 못 찾음 = 즉시 전멸(체력 0) — 사망 연출을 재생한 뒤 종료한다.
+        match.aiHp = 0;
+        updateCharacterHp("ai", 0, match.maxHp);
+        await playDeathSequence("ai");
+        if (match !== session) return;
         endMatch(true, "AI 가 더 이상 이을 단어를 찾지 못했습니다!");
         return;
     }
@@ -1779,6 +2489,7 @@ function stopMatch() {
     stopTimer();
     bgm.stop();
     document.documentElement.style.removeProperty("--pace-ratio");
+    document.querySelector(".modal")?.classList.remove("match-modal");
     match = null;
 }
 
@@ -1862,6 +2573,15 @@ const modalTemplates = {
                  Data must come from local profile storage. -->
             <h3>프로필</h3>
             <p>프로필 정보는 로컬 저장소에서 불러옵니다.</p>
+
+            <div class="profile-section">
+                <strong>캐릭터 색상</strong>
+                <div style="color:#777;font-size:13px;margin-bottom:10px;">
+                    AI 대전에서 쓸 내 캐릭터 색입니다. 멀티플레이 로비에서는
+                    같은 방 안에서 겹치지 않는 색만 고를 수 있습니다.
+                </div>
+                <div class="profile-color-grid" id="profileColorGrid"></div>
+            </div>
         </div>
     `,
 
@@ -1875,27 +2595,59 @@ const modalTemplates = {
                         이어갈 단어가 없는 단어를 허용합니다.
                     </div>
                 </div>
-                <button class="toggle" id="oneshotToggle">꺼짐</button>
+                <button class="toggle" id="settingOneShot" data-setting="oneShotWords">꺼짐</button>
             </div>
 
             <div class="setting-row">
                 <div>
                     <strong>효과음</strong>
                     <div style="color:#777;font-size:13px;">
-                        게임 효과음을 재생합니다.
+                        타격음 등 게임 효과음을 재생합니다.
                     </div>
                 </div>
-                <button class="toggle on">켜짐</button>
+                <button class="toggle" id="settingSoundEffects" data-setting="soundEffects">켜짐</button>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>배경음악</strong>
+                    <div style="color:#777;font-size:13px;">
+                        대전 중 배경음악을 재생합니다.
+                    </div>
+                </div>
+                <button class="toggle" id="settingBgm" data-setting="bgmEnabled">켜짐</button>
             </div>
 
             <div class="setting-row">
                 <div>
                     <strong>애니메이션</strong>
                     <div style="color:#777;font-size:13px;">
-                        화면 연출 효과를 사용합니다.
+                        피격·사망 등 화면 연출 효과를 사용합니다.
                     </div>
                 </div>
-                <button class="toggle on">ON</button>
+                <button class="toggle" id="settingAnimations" data-setting="animations">켜짐</button>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>커스텀 배경음악</strong>
+                    <div style="color:#777;font-size:13px;">
+                        직접 고른 음악 파일(mp3/wav/ogg)을 배경음악으로 씁니다.
+                        업로드한 파일은 이 브라우저 세션에서만 재생됩니다.
+                    </div>
+                </div>
+                <button class="toggle" id="settingCustomBgm" data-setting="customBgmEnabled">꺼짐</button>
+            </div>
+
+            <div class="setting-row" id="customBgmUploadRow" style="display:none;">
+                <div>
+                    <strong>배경음악 파일</strong>
+                    <div id="customBgmFileName" style="color:#777;font-size:13px;">
+                        선택된 파일이 없습니다.
+                    </div>
+                </div>
+                <label class="toggle" for="customBgmFileInput" style="cursor:pointer;">파일 선택</label>
+                <input type="file" id="customBgmFileInput" accept="audio/*" style="display:none;">
             </div>
 
             <!-- PLACEHOLDER:
@@ -2040,15 +2792,8 @@ function openModal(title, html) {
     modalContent.innerHTML = html;
     backdrop.classList.add("open");
 
-    const oneshotToggle = document.getElementById("oneshotToggle");
-
-    if (oneshotToggle) {
-        oneshotToggle.onclick = () => {
-            oneshotToggle.classList.toggle("on");
-            oneshotToggle.textContent =
-                oneshotToggle.classList.contains("on") ? "켜짐" : "꺼짐";
-        };
-    }
+    initSettingsToggles();
+    initProfileModal();
 
     // The dictionary search UI only exists inside the "dictionary" template,
     // so detect it by its input element rather than threading a modal key
@@ -2056,6 +2801,75 @@ function openModal(title, html) {
     if (document.getElementById("dictionaryInput")) {
         initDictionaryModal();
     }
+}
+
+/** 설정 창의 모든 [data-setting] 토글을 실제 저장된 값과 동기화하고 클릭에 반응하게 한다. */
+function initSettingsToggles() {
+    document.querySelectorAll("[data-setting]").forEach((button) => {
+        const key = button.dataset.setting;
+        const apply = (value) => {
+            button.classList.toggle("on", !!value);
+            button.textContent = value ? "켜짐" : "꺼짐";
+        };
+        apply(getSetting(key));
+        button.onclick = () => {
+            const next = !getSetting(key);
+            apply(next);
+            setSetting(key, next);
+        };
+    });
+
+    const customRow = document.getElementById("customBgmUploadRow");
+    if (customRow) {
+        customRow.style.display = getSetting("customBgmEnabled") ? "flex" : "none";
+    }
+
+    const fileInput = document.getElementById("customBgmFileInput");
+    const fileNameLabel = document.getElementById("customBgmFileName");
+    if (fileInput && fileNameLabel) {
+        fileInput.onchange = async () => {
+            const file = fileInput.files?.[0];
+            if (!file) return;
+            fileNameLabel.textContent = `"${file.name}" 불러오는 중…`;
+            const ok = await bgm.loadCustomFile(file);
+            fileNameLabel.textContent = ok
+                ? `"${file.name}" 선택됨`
+                : `"${file.name}" 은(는) 재생할 수 없는 형식입니다. mp3/wav/ogg 를 사용해 주세요.`;
+            if (ok && match && getSetting("customBgmEnabled")) {
+                bgm.stop();
+                bgm.start();
+            }
+        };
+    }
+}
+
+/** 프로필 창의 캐릭터 색상 팔레트를 그리고 클릭 시 저장한다(AI 대전에서 쓸 색). */
+async function initProfileModal() {
+    const grid = document.getElementById("profileColorGrid");
+    if (!grid) return;
+
+    const { CHARACTER_PALETTE, paletteColorOf } = await getColorModule();
+    const myColor = paletteColorOf(await getMyCharacterColor());
+
+    grid.innerHTML = CHARACTER_PALETTE
+        .map((color) => `
+            <button
+                class="profile-color-swatch ${color.hex === myColor.hex ? "selected" : ""}"
+                data-hex="${color.hex}"
+                style="background:${color.hex};"
+                aria-label="${color.hex}"
+            ></button>
+        `)
+        .join("");
+
+    grid.querySelectorAll("[data-hex]").forEach((swatch) => {
+        swatch.addEventListener("click", () => {
+            setMyCharacterColor(swatch.dataset.hex);
+            grid.querySelectorAll(".profile-color-swatch").forEach((el) => {
+                el.classList.toggle("selected", el.dataset.hex === swatch.dataset.hex);
+            });
+        });
+    });
 }
 
 function closeModal() {

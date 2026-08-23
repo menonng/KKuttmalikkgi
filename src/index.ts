@@ -25,6 +25,23 @@ export {
   PACE_MAX_SPEED_RATIO,
 } from './game/pace.js';
 export { chooseAiMove, type Difficulty, type AiMoveOptions } from './game/ai.js';
+export {
+  damageForTurn,
+  hitPlan,
+  HEALTH_BASE_DAMAGE,
+  HEALTH_DAMAGE_STEP,
+  HEALTH_MAX_DAMAGE,
+  HEALTH_HEAVY_HIT_THRESHOLD,
+  MAX_HP,
+  type HitPlan,
+} from './game/health.js';
+export {
+  CHARACTER_PALETTE,
+  paletteColorOf,
+  pickRandomAvailableColor,
+  isColorAvailable,
+  type PaletteColor,
+} from './game/characterColor.js';
 export { normalizeWord, dedupeKey } from './core/normalize.js';
 export { Validator } from './core/validate.js';
 export { LoreEngine } from './core/lore.js';

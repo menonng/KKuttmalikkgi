@@ -16,6 +16,12 @@ export interface AiMoveOptions {
   exclude: ReadonlySet<string>;
   /** 후보를 몇 개까지 살펴볼지 — 클수록 정교하지만 느리다. */
   sampleSize?: number;
+  /**
+   * "한방단어"(다음 후보가 없는 단어)를 게임 규칙상 낼 수 있는지.
+   * false(기본)면 이 함수는 한방단어를 아예 후보에서 뺀다 — 설정에서 이 규칙을
+   * 켜고 끄는 것이므로 난이도와 무관하게 모든 난이도에 동일하게 적용된다.
+   */
+  allowDeadEnd?: boolean;
 }
 
 /**
@@ -33,10 +39,14 @@ export function chooseAiMove(
   options: AiMoveOptions,
 ): DictionaryEntry | null {
   const sampleSize = options.sampleSize ?? 40;
-  const candidates = dictionary.nextCandidates(previousWord, {
+  const allowDeadEnd = options.allowDeadEnd ?? false;
+  let candidates = dictionary.nextCandidates(previousWord, {
     exclude: options.exclude,
     limit: sampleSize,
   });
+  if (!allowDeadEnd) {
+    candidates = candidates.filter((candidate) => !dictionary.isDeadEnd(candidate.word));
+  }
   if (candidates.length === 0) return null;
 
   if (options.difficulty === 'easy') {
