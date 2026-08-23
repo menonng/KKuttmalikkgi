@@ -15,6 +15,7 @@ export const DEFAULT_VALIDATION: ValidationConfig = {
   requireHangul: true,
   requireChainable: true,
   blocklist: [],
+  excludedPos: ['동사'],
 };
 
 export const DEFAULT_MAX_LORE_LENGTH = 60;

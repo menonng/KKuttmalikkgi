@@ -9,7 +9,8 @@
     "allowDigits": true,
     "requireHangul": true,
     "requireChainable": true,
-    "blocklist": []
+    "blocklist": [],
+    "excludedPos": ["동사"]
   },
   "http": {
     "userAgent": "KkuttmalikkgiDictionaryBuilder/0.1 (+https://github.com/menonng/kkuttmalikkgi)",

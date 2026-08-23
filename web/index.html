@@ -710,6 +710,13 @@
         font-size: 14px;
     }
 
+    .lookup-count {
+        padding: 4px 4px 2px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
     .lookup-loading {
         padding: 18px 4px;
         color: var(--muted);
@@ -1105,7 +1112,7 @@ function updateFeaturedWord(handle) {
     const loreEl = document.getElementById("featuredLore");
     if (!wordEl || !loreEl) return;
 
-    const entry = handle.dictionary.random();
+    const entry = handle.dictionary.randomStartWord();
     if (!entry) {
         wordEl.textContent = "사전이 비어 있습니다";
         loreEl.textContent = "먼저 dictbuild build 로 사전을 생성하세요.";
@@ -1239,38 +1246,85 @@ function renderLookupResult(resolution) {
     `;
 }
 
-/** Runs a lookup for one word and renders the result into #dictionaryResults. */
+/** 입력 문자열을 포함하는 모든 등록 단어를 카드 목록으로 그린다(즉시, 로컬 조회). */
+function renderSearchList(entries, query) {
+    if (entries.length === 0) {
+        return `<div class="lookup-empty">'${escapeHtml(query)}'을(를) 포함하는 등록 단어가 없습니다.</div>`;
+    }
+    const cards = entries
+        .map((entry) => {
+            const chips = entry.sources
+                .map((source) => `<span class="lookup-chip">${escapeHtml(source)}</span>`)
+                .join("");
+            return `
+                <div class="lookup-card">
+                    <div class="lookup-top">
+                        <span class="lookup-word">${escapeHtml(entry.word)}</span>
+                    </div>
+                    <div class="lookup-lore">${escapeHtml(entry.lore)}</div>
+                    <div class="lookup-meta">${chips}</div>
+                </div>
+            `;
+        })
+        .join("");
+    return `<div class="lookup-count">'${escapeHtml(query)}' 포함 단어 ${entries.length}개</div>${cards}`;
+}
+
+/**
+ * 검색을 실행한다. 두 단계로 나눠 "즉시" 를 보장한다:
+ *   1) 로컬 사전 포함 검색 — Map/배열 조회뿐이라 사실상 즉시 끝난다. 입력을
+ *      포함하는 모든 단어를 곧바로 보여준다.
+ *   2) 입력한 단어 자체가 로컬에 정확히 등록돼 있지 않을 때만, 그 한 단어에 한해
+ *      온라인 확인을 백그라운드로 추가 실행한다(느릴 수 있으므로 목록 렌더링을
+ *      막지 않는다). 확인되면 즉시 학습되어 다음부터는 이 브라우저에서 로컬로 잡힌다.
+ */
 async function runDictionarySearch(word) {
     const results = document.getElementById("dictionaryResults");
+    const exactBox = document.getElementById("dictionaryExactResult");
     if (!results) return;
 
-    results.innerHTML = `
+    const handle = await getDictionaryHandle();
+
+    // 1) 즉시 — 로컬 포함 검색.
+    const matches = handle.dictionary.search(word, { limit: 30 });
+    results.innerHTML = renderSearchList(matches, word);
+
+    const exactLocal = handle.dictionary.get(word);
+    if (exactLocal) {
+        pushRecentSearch(exactLocal.word);
+        renderRecentChips();
+        if (exactBox) exactBox.innerHTML = "";
+        return;
+    }
+
+    // 2) 로컬에 정확히 없을 때만 — 백그라운드 온라인 확인.
+    if (!exactBox) return;
+    exactBox.innerHTML = `
         <div class="lookup-loading">
             <span class="lookup-spinner"></span>
-            '${escapeHtml(word)}' 확인 중 — 사전, 위키백과, 원신 위키, 위키낱말사전을 순서대로 검색합니다…
+            '${escapeHtml(word)}' 자체는 등록돼 있지 않아 온라인에서 추가로 확인 중…
         </div>
     `;
 
     try {
-        const handle = await getDictionaryHandle();
         const resolution = await handle.resolver.resolve(word);
-        results.innerHTML = renderLookupResult(resolution);
+        exactBox.innerHTML = renderLookupResult(resolution);
 
-        if (resolution.status === "known" || resolution.status === "resolved") {
+        if (resolution.status === "resolved") {
             pushRecentSearch(resolution.entry.word);
             renderRecentChips();
+            // 방금 학습된 단어를 포함 검색 목록에도 반영한다.
+            results.innerHTML = renderSearchList(handle.dictionary.search(word, { limit: 30 }), word);
         }
     } catch (error) {
-        console.error("[dictionary] lookup failed:", error);
-        results.innerHTML = `
+        console.error("[dictionary] online lookup failed:", error);
+        exactBox.innerHTML = `
             <div class="lookup-card ng">
                 <div class="lookup-top">
                     <span class="lookup-word">${escapeHtml(word)}</span>
                     <span class="lookup-badge warn">오류</span>
                 </div>
-                <div class="lookup-reason">
-                    사전을 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
-                </div>
+                <div class="lookup-reason">온라인 확인 중 문제가 발생했습니다.</div>
             </div>
         `;
     }
@@ -1386,7 +1440,7 @@ function isSpecialWord(entry) {
 async function startAiMatch(difficulty) {
     const { turnDurationSeconds, paceSpeedRatio } = await getPaceModule();
     const handle = await getDictionaryHandle();
-    const starter = handle.dictionary.random();
+    const starter = handle.dictionary.randomStartWord();
 
     if (!starter) {
         openModal("AI MODE", `<div class="modal-panel">사전이 비어 있어 매치를 시작할 수 없습니다.</div>`);
@@ -1396,7 +1450,6 @@ async function startAiMatch(difficulty) {
     match = {
         difficulty,
         dictionary: handle.dictionary,
-        resolver: handle.resolver,
         turn: 1,
         hp: MATCH_START_HP,
         used: new Set([starter.word]),
@@ -1546,7 +1599,45 @@ function stopTimer() {
     if (match?.timerId) cancelAnimationFrame(match.timerId);
 }
 
-async function submitMatchWord() {
+/**
+ * 대전 중 단어 판정은 오직 로컬 사전(match.dictionary)만 본다 — 온라인 검색을
+ * 절대 타지 않는다. Map 조회 몇 번뿐이라 사실상 즉시(0.1초는커녕 1ms 미만) 끝나고,
+ * 플레이어와 AI 가 정확히 같은 단어 풀을 놓고 겨루게 돼 공평하다(온라인 검색을
+ * 쓰면 플레이어만 사전 밖 단어를 쓸 수 있어 AI 가 부당하게 불리해진다).
+ * 사전에 없는 실재하는 단어를 확인하고 싶을 땐 DICTIONARY 창의 검색을 쓰면 되고,
+ * 거기서 확인된 단어는 즉시 학습되어(BrowserDictionary.learn) 다음 대전부터는
+ * 이 로컬 사전에도 already known 상태로 남는다.
+ */
+function validateLocalTurn(dictionary, rawWord, { previous, used } = {}) {
+    const word = (rawWord ?? "").trim();
+    if ([...word].length < 2) {
+        return {
+            valid: false,
+            code: "invalid_word",
+            message: `최소 길이 2자 미만 (${[...word].length}자)`,
+        };
+    }
+
+    const found = dictionary.get(word);
+    if (!found) {
+        return { valid: false, code: "unknown_word", message: "사전에 없는 단어입니다." };
+    }
+    if (used?.has(found.word)) {
+        return { valid: false, code: "already_used", message: "이미 사용한 단어입니다.", entry: found };
+    }
+    if (previous && !dictionary.canFollow(previous, found.word)) {
+        const previousEntry = dictionary.get(previous);
+        return {
+            valid: false,
+            code: "not_chained",
+            message: `'${previousEntry ? previousEntry.last : ""}'(으)로 시작하는 단어가 아닙니다.`,
+            entry: found,
+        };
+    }
+    return { valid: true, code: "ok", message: "통과", entry: found };
+}
+
+function submitMatchWord() {
     if (!match || match.phase !== "player") return;
     const input = document.getElementById("matchInput");
     const word = input.value.trim();
@@ -1555,13 +1646,12 @@ async function submitMatchWord() {
     stopTimer();
     document.getElementById("matchInput").disabled = true;
     document.getElementById("matchSubmit").disabled = true;
-    setStatus("확인 중…");
 
-    const validation = await match.resolver.validateTurn(word, {
+    const validation = validateLocalTurn(match.dictionary, word, {
         previous: match.current.word,
         used: match.used,
     });
-    handleAttemptResult(validation, validation.valid ? "ok" : validation.code);
+    void handleAttemptResult(validation, validation.valid ? "ok" : validation.code);
 }
 
 async function handleAttemptResult(validation, code) {
@@ -1720,11 +1810,16 @@ const modalTemplates = {
                 </div>
 
                 <p class="lookup-hint">
-                    등록된 사전에 먼저 확인하고, 없는 단어는 위키백과·원신 위키·
-                    위키낱말사전을 실시간으로 검색해 실재 여부를 확인합니다.
+                    등록된 사전에서 이 글자를 포함하는 단어를 즉시 모두 보여주고,
+                    입력한 단어 자체가 등록되어 있지 않으면 위키백과·원신 위키·
+                    위키낱말사전에서 실시간으로 실재 여부를 추가로 확인합니다.
                 </p>
 
-                <!-- Populated by renderLookupResult() in the page script. -->
+                <!-- 정확히 일치하는 단어의 사용 가능 여부 — 로컬에 없으면 온라인 확인이
+                     끝나는 대로 채워진다(renderExactResult). -->
+                <div id="dictionaryExactResult"></div>
+
+                <!-- 입력을 포함하는 모든 등록 단어 — 즉시(로컬 조회) 채워진다(renderSearchList). -->
                 <div id="dictionaryResults" class="lookup-results">
                     <div class="lookup-empty">단어를 입력하고 검색해 보세요.</div>
                 </div>

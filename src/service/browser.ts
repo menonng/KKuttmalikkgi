@@ -51,6 +51,17 @@ export async function createBrowserResolver(
     }
   }
 
+  // 온라인 검색으로 새로 확인된 단어는 즉시 이 사전 인스턴스(+localStorage)에 편입된다 —
+  // 같은 단어를 또 만나면 그다음부터는 네트워크 없이 바로 known 이 된다.
+  // 호출자가 onLearn 을 더 얹고 싶으면(예: 서버로도 보고) 둘 다 실행한다.
+  const learn = dictionary.learn.bind(dictionary);
+  const onLearn: LearnHandler = options.onLearn
+    ? async (entry) => {
+        learn(entry);
+        await options.onLearn!(entry);
+      }
+    : learn;
+
   const resolver = new DictionaryResolver({
     dictionary,
     providers: [
@@ -59,7 +70,7 @@ export async function createBrowserResolver(
       koreanWiktionaryProvider(options.fetchImpl),
     ],
     cache: new BrowserResolutionCache(),
-    ...(options.onLearn ? { onLearn: options.onLearn } : {}),
+    onLearn,
   });
 
   return { resolver, dictionary };

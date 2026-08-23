@@ -111,17 +111,18 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
         stat.collected += 1;
 
         const word = normalizeWord(raw.word ?? '');
-        const result = validator.validate(word);
-        if (!result.ok) {
+        const formatResult = validator.validate(word);
+        const rejection = !formatResult.ok
+          ? { code: formatResult.code, reason: formatResult.reason }
+          : validator.isExcludedPos(raw.pos)
+            ? { code: 'excluded_pos' as const, reason: `제외 대상 품사(${raw.pos})` }
+            : null;
+
+        if (rejection) {
           stat.rejected += 1;
-          rejectionsByCode[result.code] = (rejectionsByCode[result.code] ?? 0) + 1;
+          rejectionsByCode[rejection.code] = (rejectionsByCode[rejection.code] ?? 0) + 1;
           if (rejects.length < 10_000) {
-            rejects.push({
-              word: raw.word ?? '',
-              source: source.name,
-              code: result.code,
-              reason: result.reason,
-            });
+            rejects.push({ word: raw.word ?? '', source: source.name, ...rejection });
           }
           continue;
         }

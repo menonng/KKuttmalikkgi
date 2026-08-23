@@ -6,7 +6,7 @@
  */
 import type { LookupProvider, ProviderHit } from '../types.js';
 import { normalizeWord } from '../../core/normalize.js';
-import { buildLoreForHeadword, type OpenDictItem } from '../../net/openDictFormat.js';
+import { buildLoreForHeadword, excludeByPos, type OpenDictItem } from '../../net/openDictFormat.js';
 
 export interface OpenDictProviderOptions {
   apiKey: string;
@@ -73,7 +73,12 @@ export class OpenDictProvider implements LookupProvider {
 
     if (!headword) return null;
 
-    const lore = buildLoreForHeadword(homonymGroup);
+    // 동음이의어 전부가 동사(인용형)뿐이면 끝말잇기에 쓸 수 있는 단어가 아니다 —
+    // "모르는 단어"와 동일하게 취급되도록 null 을 돌려준다.
+    const eligible = excludeByPos(homonymGroup);
+    if (eligible.length === 0) return null;
+
+    const lore = buildLoreForHeadword(eligible);
     return {
       title: headword,
       ...(lore ? { lore } : {}),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildLoreForHeadword,
+  excludeByPos,
   formatDefinitions,
   groupByHeadword,
   pickRepresentativeDefinitions,
@@ -123,5 +124,55 @@ describe('buildLoreForHeadword (통합)', () => {
       { word: '륨침대', sense: [{ sense_no: '1', definition: '주로 알루미늄을 뼈대로 하는 간이 침대.' }] },
     ];
     expect(buildLoreForHeadword(group)).toBe('주로 알루미늄을 뼈대로 하는 간이 침대.');
+  });
+});
+
+describe('excludeByPos (동사 제외)', () => {
+  it('기본값(동사)에 해당하는 동음이의어를 걸러낸다', () => {
+    const items: OpenDictItem[] = [
+      { word: '가리다', sup_no: '01', sense: [{ sense_no: '1', definition: '보이지 않게 막다.', pos: '동사' }] },
+      { word: '가리다', sup_no: '02', sense: [{ sense_no: '1', definition: '음식을 골라 먹다.', pos: '동사' }] },
+    ];
+    expect(excludeByPos(items)).toEqual([]);
+  });
+
+  it('동사가 아닌 동음이의어는 남긴다', () => {
+    const items: OpenDictItem[] = [
+      { word: '배', sup_no: '01', sense: [{ sense_no: '1', definition: '신체 부위', pos: '명사' }] },
+      { word: '배', sup_no: '02', sense: [{ sense_no: '1', definition: '떠나다', pos: '동사' }] },
+    ];
+    const result = excludeByPos(items);
+    expect(result.length).toBe(1);
+    expect(result[0]?.sup_no).toBe('01');
+  });
+
+  it('품사를 모르면 통과시킨다(판단 근거가 없으므로)', () => {
+    const items: OpenDictItem[] = [{ word: '단어', sense: [{ sense_no: '1', definition: '뜻' }] }];
+    expect(excludeByPos(items)).toEqual(items);
+  });
+
+  it('excludedPos 를 커스터마이즈할 수 있다', () => {
+    const items: OpenDictItem[] = [
+      { word: '예쁘다', sense: [{ sense_no: '1', definition: '아름답다.', pos: '형용사' }] },
+    ];
+    expect(excludeByPos(items, [])).toEqual(items);
+    expect(excludeByPos(items, ['형용사'])).toEqual([]);
+  });
+});
+
+describe('buildLoreForHeadword: 동사만 있는 단어는 전부 제외', () => {
+  it('동음이의어 전부가 동사면 undefined', () => {
+    const items: OpenDictItem[] = [
+      { word: '가다', sense: [{ sense_no: '1', definition: '이동하다.', pos: '동사' }] },
+    ];
+    expect(buildLoreForHeadword(items)).toBeUndefined();
+  });
+
+  it('동사 동음이의어를 뺀 나머지로 정상 동작한다', () => {
+    const items: OpenDictItem[] = [
+      { word: '배', sup_no: '01', sense: [{ sense_no: '1', definition: '신체 부위', pos: '명사' }] },
+      { word: '배', sup_no: '02', sense: [{ sense_no: '1', definition: '떠나다', pos: '동사' }] },
+    ];
+    expect(buildLoreForHeadword(items)).toBe('신체 부위');
   });
 });

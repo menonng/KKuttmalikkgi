@@ -65,3 +65,85 @@ describe('DictionaryStore', () => {
     expect(store.startingWith('나').map((item) => item.word)).toEqual(['나비']);
   });
 });
+
+describe('DictionaryIndex.search (포함 검색)', () => {
+  const search = DictionaryStore.fromEntries([
+    entry('사과'),
+    entry('사과나무'),
+    entry('왕사과'),
+    entry('컴퓨터'),
+  ]);
+
+  it('완전 일치를 가장 먼저 돌려준다', () => {
+    const results = search.search('사과');
+    expect(results.map((e) => e.word)).toEqual(['사과', '사과나무', '왕사과']);
+  });
+
+  it('부분 문자열을 포함하는 단어를 모두 돌려준다', () => {
+    const results = search.search('과나');
+    expect(results.map((e) => e.word)).toEqual(['사과나무']);
+  });
+
+  it('일치하는 게 없으면 빈 배열', () => {
+    expect(search.search('없는말')).toEqual([]);
+  });
+
+  it('limit 을 넘지 않는다', () => {
+    expect(search.search('사과', { limit: 1 }).length).toBe(1);
+  });
+});
+
+describe('DictionaryIndex.randomStartWord (일반명사/고유명사 균형)', () => {
+  function properEntry(word: string): DictionaryEntry {
+    return { ...entry(word), sources: ['genshin'] };
+  }
+  function commonEntry(word: string): DictionaryEntry {
+    return { ...entry(word), sources: ['korean_dict'] };
+  }
+
+  it('고유명사만 압도적으로 많아도 일반명사가 최소 절반 확률로 뽑힌다', () => {
+    const heavilyProper = DictionaryStore.fromEntries([
+      ...Array.from({ length: 50 }, (_, i) => properEntry(`고유${i}`)),
+      commonEntry('사과'),
+    ]);
+
+    let commonCount = 0;
+    for (let i = 0; i < 400; i += 1) {
+      if (heavilyProper.randomStartWord()?.word === '사과') commonCount += 1;
+    }
+    // 이론상 50%. 400회 시행에서 충분히 넓은 허용 범위(30~70%)로 판정한다.
+    expect(commonCount).toBeGreaterThan(120);
+    expect(commonCount).toBeLessThan(280);
+  });
+
+  it('한쪽 풀이 비어 있으면 나머지 풀에서만 뽑는다', () => {
+    const onlyProper = DictionaryStore.fromEntries([properEntry('원신단어')]);
+    expect(onlyProper.randomStartWord()?.word).toBe('원신단어');
+
+    const onlyCommon = DictionaryStore.fromEntries([commonEntry('일반단어')]);
+    expect(onlyCommon.randomStartWord()?.word).toBe('일반단어');
+  });
+
+  it('둘 다 비어 있으면 undefined', () => {
+    expect(DictionaryStore.fromEntries([]).randomStartWord()).toBeUndefined();
+  });
+});
+
+describe('DictionaryIndex.add (실시간 학습)', () => {
+  it('새 단어를 추가하면 즉시 조회/연결에 반영된다', () => {
+    const dict = DictionaryStore.fromEntries([entry('벤티')]);
+    expect(dict.get('티라미수')).toBeUndefined();
+
+    const added = dict.add(entry('티라미수'));
+    expect(added).toBe(true);
+    expect(dict.get('티라미수')?.word).toBe('티라미수');
+    expect(dict.canFollow('벤티', '티라미수')).toBe(true);
+    expect(dict.size).toBe(2);
+  });
+
+  it('이미 아는 단어는 조용히 무시하고 false 를 돌려준다', () => {
+    const dict = DictionaryStore.fromEntries([entry('벤티')]);
+    expect(dict.add(entry('벤티'))).toBe(false);
+    expect(dict.size).toBe(1);
+  });
+});

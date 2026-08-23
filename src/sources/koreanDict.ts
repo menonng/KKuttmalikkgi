@@ -16,7 +16,12 @@ import { createInterface } from 'node:readline';
 import path from 'node:path';
 import type { RawEntry } from '../core/types.js';
 import { HttpClient, OfflineError } from '../net/httpCache.js';
-import { buildLoreForHeadword, groupByHeadword, type OpenDictItem } from '../net/openDictFormat.js';
+import {
+  buildLoreForHeadword,
+  excludeByPos,
+  groupByHeadword,
+  type OpenDictItem,
+} from '../net/openDictFormat.js';
 import { SeedSource } from './seedSource.js';
 import type { SourceContext } from './types.js';
 
@@ -156,7 +161,11 @@ export class KoreanDictSource extends SeedSource {
       // (DedupeEngine + LoreEngine.merge) 이 같은 단어의 여러 RawEntry 를 다시 합쳐주므로
       // 완전히 유실되지는 않는다 — 스트리밍 구조를 유지하기 위한 실용적 절충이다.
       for (const [word, homonymGroup] of groupByHeadword(items)) {
-        const lore = buildLoreForHeadword(homonymGroup);
+        // 동음이의어 중 동사(인용형)만 있는 단어는 통째로 사전에서 뺀다.
+        const eligible = excludeByPos(homonymGroup);
+        if (eligible.length === 0) continue;
+
+        const lore = buildLoreForHeadword(eligible);
         yield {
           word,
           source: this.name,

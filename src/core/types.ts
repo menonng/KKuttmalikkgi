@@ -16,6 +16,12 @@ export interface RawEntry {
   aliases?: string[];
   /** 분류 태그. 통계/필터용이며 export 형식에는 포함되지 않는다. */
   tags?: string[];
+  /**
+   * 품사(우리말샘 API 의 pos 필드 등). 알 수 없으면 비워둔다.
+   * "동사"/"형용사"면 검증 단계에서 걸러진다 — 사전 인용형("먹다")은
+   * 실제 대화에서 단독으로 쓰이는 단어가 아니라 끝말잇기에 부적합하다.
+   */
+  pos?: string;
   /** 소스별 부가 정보(원본 URL, 페이지 id 등). 디버깅/증분 빌드용. */
   extra?: Record<string, unknown>;
 }
@@ -54,7 +60,8 @@ export type RejectCode =
   | 'illegal_characters'
   | 'blocked'
   | 'no_chain_head'
-  | 'no_chain_tail';
+  | 'no_chain_tail'
+  | 'excluded_pos';
 
 /** 빌드 1회에 대한 요약 통계. manifest.json 에 기록된다. */
 export interface BuildStats {

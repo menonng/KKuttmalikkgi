@@ -16,6 +16,8 @@
 export interface OpenDictSense {
   sense_no?: string;
   definition?: string;
+  /** 품사("명사"/"동사"/"형용사" 등). 우리말샘 API 가 뜻풀이(sense)마다 붙여준다. */
+  pos?: string;
 }
 
 export interface OpenDictItem {
@@ -26,10 +28,33 @@ export interface OpenDictItem {
 }
 
 const DEFAULT_LIMIT = 3;
+/** 사전에서 제외할 품사. 인용형("먹다")은 실제 대화에서 단독 사용되지 않아 끝말잇기에 부적합하다. */
+const DEFAULT_EXCLUDED_POS = ['동사'];
 
 function toSenseArray(sense: OpenDictItem['sense']): OpenDictSense[] {
   if (Array.isArray(sense)) return sense;
   return sense ? [sense] : [];
+}
+
+/** 한 동음이의어(item)의 품사. 우리말샘은 한 item 안의 모든 뜻이 같은 품사이므로 첫 뜻 것을 대표로 쓴다. */
+function itemPos(item: OpenDictItem): string | undefined {
+  return toSenseArray(item.sense).find((sense) => sense.pos)?.pos;
+}
+
+/**
+ * 제외 대상 품사(기본: 동사)에 해당하는 동음이의어 그룹만 걸러낸다.
+ * 품사를 모르는 항목은 통과시킨다(판단할 근거가 없으므로).
+ */
+export function excludeByPos(
+  items: OpenDictItem[],
+  excludedPos: readonly string[] = DEFAULT_EXCLUDED_POS,
+): OpenDictItem[] {
+  if (excludedPos.length === 0) return items;
+  const blocked = new Set(excludedPos);
+  return items.filter((item) => {
+    const pos = itemPos(item);
+    return pos === undefined || !blocked.has(pos);
+  });
 }
 
 function parseOrdinal(value: string | undefined): number {
@@ -100,10 +125,16 @@ export function formatDefinitions(definitions: string[]): string | undefined {
   return cleaned.map((definition, index) => `${index + 1}. ${definition}`).join(' ');
 }
 
-/** groupByHeadword + pickRepresentativeDefinitions + formatDefinitions 을 한 번에. */
+/**
+ * groupByHeadword + 품사 필터링 + pickRepresentativeDefinitions + formatDefinitions 을 한 번에.
+ * 동음이의어 중 제외 대상 품사(기본 동사)인 것은 먼저 걸러내고 남은 것으로 규칙을 적용한다.
+ * 전부 걸러지면(= 이 단어가 통째로 동사뿐이면) undefined — 사전에서 아예 빠진다.
+ */
 export function buildLoreForHeadword(
   homonymGroup: OpenDictItem[],
   limit = DEFAULT_LIMIT,
+  excludedPos: readonly string[] = DEFAULT_EXCLUDED_POS,
 ): string | undefined {
-  return formatDefinitions(pickRepresentativeDefinitions(homonymGroup, limit));
+  const eligible = excludeByPos(homonymGroup, excludedPos);
+  return formatDefinitions(pickRepresentativeDefinitions(eligible, limit));
 }
