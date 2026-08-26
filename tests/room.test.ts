@@ -91,6 +91,34 @@ describe('Room — 오답은 라운드를 끝내지 않는다', () => {
     expect(result).toEqual({ ok: false, code: 'not_your_turn' });
   });
 
+  it('setReady 는 준비 상태를 방 전체에 방송한다("대기실" 콩콩 뛰는 연출용)', () => {
+    const h = makeRoom();
+    h.room.addPlayer('p1', '플레이어1');
+    h.room.addPlayer('p2', '플레이어2');
+
+    const before = h.broadcasts.length;
+    const result = h.room.setReady('p2', true);
+    expect(result).toEqual({ ok: true });
+    expect(h.broadcasts.length).toBeGreaterThan(before);
+
+    const states = h.broadcasts.filter(
+      (m): m is Extract<ServerMessage, { type: 'room_state' }> => m.type === 'room_state',
+    );
+    const latest = states[states.length - 1]!;
+    expect(latest.players.find((p) => p.id === 'p2')?.ready).toBe(true);
+    expect(latest.players.find((p) => p.id === 'p1')?.ready).toBe(false);
+  });
+
+  it('게임이 시작된 뒤에는 준비 상태를 바꿀 수 없다', () => {
+    const h = makeRoom();
+    h.room.addPlayer('p1', '플레이어1');
+    h.room.addPlayer('p2', '플레이어2');
+    h.room.startGame('p1');
+
+    const result = h.room.setReady('p1', true);
+    expect(result.ok).toBe(false);
+  });
+
   it('정답을 내면 대미지 없이 체인이 이어지고 턴이 넘어간다', () => {
     const h = makeRoom();
     h.room.addPlayer('p1', '플레이어1');

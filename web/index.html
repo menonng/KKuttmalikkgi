@@ -2837,69 +2837,17 @@ const modalTemplates = {
 
 /* ============================================================
    MULTIPLAYER WINDOW
+   실제 멀티플레이 로비/대전은 web/multiplayer.html 이 새 창에서 담당한다
+   (src/multiplayer/server.ts 에 WebSocket으로 접속) — "멀티플레이 시의
+   로비 창은 기본적으로 새 창" 요구사항.
    ============================================================ */
 
 function openMultiplayer() {
-    openModal(
-        "MULTIPLAYER",
-        `
-        <div class="room-actions">
-
-            <button class="room-button" id="createRoom">
-                <strong>방 만들기</strong>
-                <span>새 멀티플레이 방을 만듭니다.</span>
-            </button>
-
-            <button class="room-button" id="joinRoom">
-                <strong>방 참가</strong>
-                <span>8자리 방 코드를 입력해 참가합니다.</span>
-            </button>
-
-        </div>
-
-        <!-- PLACEHOLDER:
-             Insert room list / recent rooms / invitations here
-             when the multiplayer backend exists. -->
-        `
+    window.open(
+        "./multiplayer.html",
+        "kkuttmalMultiplayer",
+        "width=980,height=860,noopener",
     );
-
-    document.getElementById("createRoom").onclick = () => {
-        openModal(
-            "방 만들기",
-            `
-            <div class="modal-panel">
-                <!-- PLACEHOLDER:
-                     Generate a unique 8-character alphanumeric room
-                     code here. The secret theme must force this code
-                     to 19911018. -->
-                <h3>방 설정</h3>
-                <p>방 코드는 멀티플레이 서버에서 생성됩니다.</p>
-                <button class="primary-button">만들기</button>
-            </div>
-            `
-        );
-    };
-
-    document.getElementById("joinRoom").onclick = () => {
-        openModal(
-            "방 참가",
-            `
-            <div class="modal-panel">
-                <div class="search-row">
-                    <input
-                        maxlength="8"
-                        id="roomCodeInput"
-                        placeholder="ROOM CODE"
-                        autocomplete="off"
-                    >
-                    <button class="primary-button">참가</button>
-                </div>
-                <!-- PLACEHOLDER:
-                     Validate the entered room code against the server. -->
-            </div>
-            `
-        );
-    };
 }
 
 /* ============================================================
@@ -3141,8 +3089,11 @@ document.addEventListener("keydown", (event) => {
    2. DONE — Featured Word now shows a real random entry loaded from
       data/dictionary.json (see updateFeaturedWord() above).
 
-   3. Connect MULTIPLAYER to the real server. Implement this LAST —
-      after the dictionary API (done) and the AI opponent.
+   3. DONE — MULTIPLAYER opens web/multiplayer.html in a new window,
+      which speaks the WebSocket protocol in src/multiplayer/protocol.ts
+      to src/multiplayer/server.ts (Room = authoritative game state).
+      The user must deploy server.ts somewhere reachable (Render/Fly.io/
+      etc, PORT env var) and enter that URL in the lobby screen.
 
    4. Connect AI MODE to the AI game engine.
 

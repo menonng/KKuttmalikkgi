@@ -27,6 +27,8 @@ export interface PlayerView {
   alive: boolean;
   connected: boolean;
   isHost: boolean;
+  /** "대기실"에서의 준비 상태(로비 전용 — 게임이 시작되면 의미가 없어진다). */
+  ready: boolean;
 }
 
 /** characterColor.ts 의 PaletteColor 와 같은 모양이지만 순환 의존을 피하려 별도 선언. */
@@ -120,6 +122,11 @@ export interface SetColorMessage {
   hex: string;
 }
 
+export interface SetReadyMessage {
+  type: 'set_ready';
+  ready: boolean;
+}
+
 export interface StartGameMessage {
   type: 'start_game';
 }
@@ -137,6 +144,7 @@ export type ClientMessage =
   | CreateRoomMessage
   | JoinRoomMessage
   | SetColorMessage
+  | SetReadyMessage
   | StartGameMessage
   | SubmitWordMessage
   | LeaveRoomMessage;

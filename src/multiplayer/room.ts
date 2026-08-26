@@ -30,6 +30,8 @@ export interface RoomPlayer {
   hp: number;
   alive: boolean;
   connected: boolean;
+  /** 로비 "대기실"에서의 준비 상태. 게임이 시작되면 의미가 없어진다. */
+  ready: boolean;
 }
 
 export type SubmitFailureCode =
@@ -101,6 +103,7 @@ export class Room {
       hp: MAX_HP,
       alive: true,
       connected: true,
+      ready: false,
     });
     if (!this.hostId) this.hostId = id;
     this.broadcastRoomState();
@@ -132,6 +135,15 @@ export class Room {
 
     const palette = [...this.players.values()].find((p) => p.color.hex === hex);
     player.color = palette ? palette.color : { hex, eyeColor: '#ffffff' };
+    this.broadcastRoomState();
+    return { ok: true };
+  }
+
+  /** "대기실"에서 준비 상태를 토글한다. 다른 참가자 화면에도 즉시 반영된다. */
+  setReady(id: string, ready: boolean): { ok: true } | { ok: false; reason: string } {
+    const player = this.players.get(id);
+    if (!player || this.phase !== 'lobby') return { ok: false, reason: '지금은 준비 상태를 바꿀 수 없습니다.' };
+    player.ready = ready;
     this.broadcastRoomState();
     return { ok: true };
   }
@@ -303,6 +315,7 @@ export class Room {
         alive: player.alive,
         connected: player.connected,
         isHost: player.id === this.hostId,
+        ready: player.ready,
       });
     }
     // selfId 는 수신자마다 달라야 하므로, server.ts 가 개인화해서 다시 보낸다.

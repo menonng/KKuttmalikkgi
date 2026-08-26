@@ -162,6 +162,14 @@ export function createMultiplayerServer(options: MultiplayerServerOptions): Mult
         return;
       }
 
+      case 'set_ready': {
+        const room = conn.roomCode ? rooms.get(conn.roomCode) : undefined;
+        if (!room) return;
+        const result = room.setReady(connId, message.ready);
+        if (!result.ok) sendError(conn.socket, result.reason);
+        return;
+      }
+
       case 'start_game': {
         const room = conn.roomCode ? rooms.get(conn.roomCode) : undefined;
         if (!room) return;
@@ -236,6 +244,11 @@ export function createMultiplayerServer(options: MultiplayerServerOptions): Mult
     roomCount: () => rooms.size,
     close: () =>
       new Promise<void>((resolve, reject) => {
+        // wss.close() 는 "새 연결은 안 받되, 이미 열린 소켓은 알아서 끊기길"
+        // 기다리기만 한다 — 클라이언트가 정상 종료 핸드셰이크 없이 그냥
+        // 사라지면(브라우저 강제 종료 등) 영영 안 끝날 수 있으므로, 열려 있는
+        // 소켓을 전부 강제로 끊어서 close() 가 확실히 끝나게 한다.
+        for (const client of wss.clients) client.terminate();
         wss.close((error) => (error ? reject(error) : resolve()));
       }),
   };

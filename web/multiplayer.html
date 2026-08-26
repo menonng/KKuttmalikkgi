@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MULTIPLAYER · 끝말잇기 아레나</title>
+
+<style>
+    :root {
+        --bg: #f4f2ee;
+        --surface: #ffffff;
+        --surface-soft: #f7f6f3;
+        --ink: #1d2327;
+        --muted: #777;
+        --line: #202020;
+        --red: #962b28;
+        --pink: #f0d9e4;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Pretendard", "Noto Sans KR", "Noto Sans", Arial, Helvetica, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 28px 20px 60px;
+    }
+
+    button, input { font: inherit; color: inherit; }
+
+    h1 {
+        font-size: 26px;
+        font-weight: 950;
+        margin: 0 0 4px;
+    }
+
+    .subtitle {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 24px;
+    }
+
+    .panel {
+        width: min(880px, 100%);
+        border: 4px solid var(--line);
+        border-radius: 20px;
+        background: var(--surface);
+        box-shadow: 0 10px 0 var(--line);
+        padding: 24px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ---------- 연결 화면 ---------- */
+
+    .field-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .field-row label {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .field-row input {
+        padding: 12px 14px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: white;
+    }
+
+    .connect-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .room-button {
+        padding: 18px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface-soft);
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .room-button strong { display: block; font-size: 18px; margin-bottom: 6px; }
+    .room-button span { font-size: 13px; color: var(--muted); }
+
+    .join-code-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .join-code-row input {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .primary-button {
+        padding: 12px 18px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: var(--red);
+        color: white;
+        cursor: pointer;
+        font-weight: 900;
+    }
+
+    .primary-button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .ghost-button {
+        padding: 10px 16px;
+        border: 3px solid var(--line);
+        border-radius: 10px;
+        background: transparent;
+        cursor: pointer;
+        font-weight: 800;
+    }
+
+    .status-line {
+        margin-top: 14px;
+        font-size: 13px;
+        font-weight: 700;
+        min-height: 18px;
+    }
+    .status-line.error { color: var(--red); }
+
+    /* ---------- 대기실 ---------- */
+
+    .lobby-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .room-code-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border: 3px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface-soft);
+        cursor: pointer;
+    }
+
+    .room-code-box .code {
+        font-size: 26px;
+        font-weight: 950;
+        letter-spacing: 0.12em;
+        font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    .room-code-box .hint { font-size: 11px; color: var(--muted); }
+
+    .lobby-sub {
+        font-size: 13px;
+        color: var(--muted);
+    }
+
+    .character-lobby-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .character-slot {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px 8px 12px;
+        border: 3px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface-soft);
+        overflow: visible;
+    }
+
+    .character-slot.defeated { opacity: 0.35; filter: grayscale(1); }
+
+    .character-name {
+        font-size: 12px;
+        font-weight: 900;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-bottom: 6px;
+        text-align: center;
+    }
+
+    .character-badges {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+        min-height: 18px;
+    }
+
+    .character-badge {
+        font-size: 10px;
+        font-weight: 900;
+        padding: 2px 7px;
+        border-radius: 999px;
+        border: 2px solid var(--line);
+        background: white;
+    }
+
+    .character-badge.host { background: #ffcc11; }
+    .character-badge.ready { background: #55bb44; color: white; }
+
+    .character-rig {
+        position: relative;
+        width: 64px;
+        height: 64px;
+    }
+
+    .character-body {
+        position: absolute;
+        inset: 0;
+        border-radius: 26%;
+        border: 4px solid var(--line);
+        background: var(--character-color, #f0d9e4);
+        box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .character-eye {
+        position: absolute;
+        top: 34%;
+        width: 16%;
+        height: 16%;
+        border-radius: 50%;
+        background: var(--character-eye-color, #ffffff);
+        border: 2px solid var(--line);
+    }
+
+    .character-eye::after {
+        content: "";
+        position: absolute;
+        top: 30%; left: 30%;
+        width: 45%; height: 45%;
+        border-radius: 50%;
+        background: var(--line);
+    }
+
+    .character-eye.left { left: 24%; }
+    .character-eye.right { right: 24%; }
+
+    /* "READY하면 캐릭터가 콩콩 뛰는 연출" 요구사항. */
+    .character-slot.ready .character-rig {
+        animation: ready-bounce 620ms cubic-bezier(0.32, 0.6, 0.4, 1.4) infinite;
+    }
+
+    @keyframes ready-bounce {
+        0%, 100% { transform: translateY(0) scaleY(1); }
+        30% { transform: translateY(-11px) scaleY(1.06); }
+        55% { transform: translateY(0) scaleY(0.92); }
+        75% { transform: translateY(-3px) scaleY(1.02); }
+    }
+
+    .character-hp-track {
+        margin-top: 10px;
+        width: 100%;
+        max-width: 120px;
+        height: 9px;
+        border: 3px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        overflow: hidden;
+    }
+
+    .character-hp-fill {
+        height: 100%;
+        background: #4caf50;
+        transition: width 260ms ease, background 260ms ease;
+    }
+    .character-hp-fill.mid { background: #ffb020; }
+    .character-hp-fill.low { background: var(--red); }
+
+    .color-palette-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 6px 0 20px;
+    }
+
+    .color-swatch {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 3px solid var(--line);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .color-swatch.mine { box-shadow: 0 0 0 3px var(--red); }
+    .color-swatch.taken { cursor: not-allowed; opacity: 0.35; }
+    .color-swatch.taken::after {
+        content: "×";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        color: white;
+        text-shadow: 0 0 3px rgba(0,0,0,0.6);
+    }
+
+    .lobby-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .lobby-actions-left { display: flex; gap: 10px; }
+
+    /* ---------- 게임 화면 ---------- */
+
+    .match-hud {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .match-timer-track {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--surface-soft);
+        border: 2px solid var(--line);
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+    .match-timer-fill {
+        height: 100%;
+        width: 100%;
+        background: var(--red);
+        transform-origin: left center;
+        transition: transform 120ms linear;
+    }
+    .match-timer-fill.urgent { background: #ff3b3b; }
+
+    .match-word-stage {
+        text-align: center;
+        margin-bottom: 18px;
+    }
+
+    .match-turn-label { font-size: 13px; color: var(--muted); font-weight: 800; margin-bottom: 6px; }
+
+    .match-current-word {
+        font-size: 44px;
+        font-weight: 950;
+        letter-spacing: 0.02em;
+    }
+
+    .match-hint-char { color: var(--red); }
+
+    .match-status {
+        min-height: 20px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--red);
+        margin-top: 4px;
+    }
+
+    .match-input-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .match-input-row input {
+        flex: 1;
+        min-width: 0;
+        padding: 14px 16px;
+        border: 3px solid var(--line);
+        border-radius: 12px;
+        background: white;
+        font-size: 16px;
+    }
+
+    .match-log {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        margin-bottom: 18px;
+    }
+
+    .match-log-word {
+        flex-shrink: 0;
+        padding: 6px 12px;
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-soft);
+        font-size: 13px;
+        font-weight: 800;
+        cursor: default;
+    }
+
+    .character-stage {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 14px;
+    }
+
+    .match-result {
+        text-align: center;
+        margin-top: 20px;
+        padding: 20px;
+        border: 3px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface-soft);
+    }
+
+    .match-result h3 { margin: 0 0 8px; font-size: 22px; }
+</style>
+</head>
+<body>
+
+<h1>MULTIPLAYER</h1>
+<p class="subtitle">끝말잇기 아레나 · 대기실에서 캐릭터를 고르고, 준비되면 방장이 시작합니다.</p>
+
+<!-- ============ 1. 연결 화면 ============ -->
+<section class="panel screen active" id="screenConnect">
+    <div class="field-row">
+        <label for="serverUrlInput">서버 주소</label>
+        <input id="serverUrlInput" placeholder="ws://localhost:8787" autocomplete="off">
+    </div>
+    <div class="field-row">
+        <label for="nicknameInput">닉네임</label>
+        <input id="nicknameInput" maxlength="20" placeholder="닉네임" autocomplete="off">
+    </div>
+
+    <div class="connect-actions">
+        <button class="room-button" id="createRoomButton">
+            <strong>방 만들기</strong>
+            <span>새 대기실을 열고 방장이 됩니다.</span>
+        </button>
+
+        <div class="room-button" style="cursor: default;">
+            <strong>방 참가</strong>
+            <div class="join-code-row">
+                <input id="joinCodeInput" maxlength="6" placeholder="방 코드">
+                <button class="primary-button" id="joinRoomButton">참가</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-line" id="connectStatus"></div>
+</section>
+
+<!-- ============ 2. 대기실 ============ -->
+<section class="panel screen" id="screenLobby">
+    <div class="lobby-header">
+        <div class="room-code-box" id="roomCodeBox" title="눌러서 코드 복사">
+            <span class="code" id="lobbyRoomCode">------</span>
+            <span class="hint">눌러서 복사</span>
+        </div>
+        <div class="lobby-sub" id="lobbyPlayerCount"></div>
+    </div>
+
+    <div class="character-lobby-grid" id="lobbyCharacterGrid"></div>
+
+    <div class="lobby-sub" style="margin-bottom: 6px;">내 색상</div>
+    <div class="color-palette-row" id="colorPaletteRow"></div>
+
+    <div class="lobby-actions">
+        <div class="lobby-actions-left">
+            <button class="ghost-button" id="leaveLobbyButton">나가기</button>
+            <button class="primary-button" id="readyToggleButton">준비 완료</button>
+        </div>
+        <button class="primary-button" id="startGameButton" style="display: none;">게임 시작</button>
+    </div>
+
+    <div class="status-line" id="lobbyStatus"></div>
+</section>
+
+<!-- ============ 3. 게임 화면 ============ -->
+<section class="panel screen" id="screenGame">
+    <div class="match-hud">
+        <span id="gameTurnLabel">턴 1</span>
+        <button class="ghost-button" id="leaveGameButton">나가기</button>
+    </div>
+
+    <div class="match-timer-track">
+        <div class="match-timer-fill" id="gameTimerFill"></div>
+    </div>
+
+    <div class="match-word-stage">
+        <div class="match-turn-label" id="gameTurnPlayerLabel"></div>
+        <div class="match-current-word" id="gameCurrentWord"></div>
+        <div class="match-status" id="gameStatus"></div>
+    </div>
+
+    <div class="match-input-row">
+        <input id="gameInput" type="text" placeholder="다음 단어를 입력…" autocomplete="off" disabled>
+        <button class="primary-button" id="gameSubmitButton" disabled>제출</button>
+    </div>
+
+    <div class="match-log" id="gameLog"></div>
+
+    <div class="character-stage" id="gameCharacterStage"></div>
+
+    <div id="gameResult"></div>
+</section>
+
+<script type="module">
+import { CHARACTER_PALETTE, paletteColorOf, isColorAvailable } from "./dist/game/characterColor.js";
+import { normalizeRoomCode } from "./dist/multiplayer/roomCode.js";
+
+const STORAGE_URL_KEY = "kkuttmal:multiplayerServerUrl";
+const STORAGE_NICK_KEY = "kkuttmal:multiplayerNickname";
+const DEFAULT_SERVER_URL = "ws://localhost:8787";
+
+const el = (id) => document.getElementById(id);
+
+function loadStored(key, fallback) {
+    try {
+        return localStorage.getItem(key) || fallback;
+    } catch {
+        return fallback;
+    }
+}
+function saveStored(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* 무시 */ }
+}
+
+el("serverUrlInput").value = loadStored(STORAGE_URL_KEY, DEFAULT_SERVER_URL);
+el("nicknameInput").value = loadStored(STORAGE_NICK_KEY, "");
+
+/** 화면 전환. */
+function showScreen(name) {
+    for (const screen of document.querySelectorAll(".screen")) {
+        screen.classList.toggle("active", screen.id === name);
+    }
+}
+
+let ws = null;
+const state = {
+    code: null,
+    phase: "lobby",
+    players: [],
+    hostId: null,
+    selfId: null,
+    turnOrder: [],
+    currentPlayerId: null,
+    turn: 1,
+    log: [],
+    deadlineTs: 0,
+    durationMs: 0,
+    timerRaf: null,
+};
+
+function setConnectStatus(message, isError) {
+    const box = el("connectStatus");
+    box.textContent = message || "";
+    box.classList.toggle("error", Boolean(isError));
+}
+
+function connectAndSend(build) {
+    const url = el("serverUrlInput").value.trim() || DEFAULT_SERVER_URL;
+    const nickname = el("nicknameInput").value.trim() || "플레이어";
+    saveStored(STORAGE_URL_KEY, url);
+    saveStored(STORAGE_NICK_KEY, nickname);
+
+    setConnectStatus("연결 중…", false);
+    try {
+        ws = new WebSocket(url);
+    } catch (error) {
+        setConnectStatus(`서버 주소가 올바르지 않습니다: ${error.message}`, true);
+        return;
+    }
+
+    ws.addEventListener("open", () => {
+        setConnectStatus("", false);
+        ws.send(JSON.stringify(build(nickname)));
+    });
+    ws.addEventListener("message", (event) => handleServerMessage(JSON.parse(event.data)));
+    ws.addEventListener("close", () => {
+        if (state.code) {
+            // 대기실/게임 도중 끊기면 연결 화면으로 돌려보낸다.
+            showScreen("screenConnect");
+            setConnectStatus("서버와 연결이 끊어졌습니다. 다시 시도해 주세요.", true);
+        } else {
+            setConnectStatus("서버에 연결하지 못했습니다.", true);
+        }
+        state.code = null;
+        stopGameTimer();
+    });
+    ws.addEventListener("error", () => {
+        setConnectStatus("서버에 연결하지 못했습니다. 주소를 확인해 주세요.", true);
+    });
+}
+
+el("createRoomButton").addEventListener("click", () => {
+    connectAndSend((nickname) => ({ type: "create_room", nickname }));
+});
+
+el("joinRoomButton").addEventListener("click", () => {
+    const code = normalizeRoomCode(el("joinCodeInput").value);
+    if (!code) {
+        setConnectStatus("방 코드를 입력해 주세요.", true);
+        return;
+    }
+    connectAndSend((nickname) => ({ type: "join_room", code, nickname }));
+});
+
+function send(message) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
+}
+
+/* ============================================================
+   서버 메시지 처리
+   ============================================================ */
+
+function handleServerMessage(message) {
+    switch (message.type) {
+        case "room_state":
+            state.code = message.code;
+            state.phase = message.phase;
+            state.players = message.players;
+            state.hostId = message.hostId;
+            state.selfId = message.selfId;
+            if (state.phase === "lobby") {
+                showScreen("screenLobby");
+                renderLobby();
+            } else {
+                renderGameRoster();
+            }
+            return;
+        case "game_started":
+            state.turnOrder = message.turnOrder;
+            state.log = [];
+            showScreen("screenGame");
+            el("gameResult").innerHTML = "";
+            renderGameRoster();
+            renderLog();
+            return;
+        case "turn_start":
+            state.currentPlayerId = message.playerId;
+            state.turn = message.turn;
+            state.currentWord = message.currentWord;
+            state.durationMs = message.durationSeconds * 1000;
+            state.deadlineTs = Date.now() + state.durationMs;
+            setGameStatus("");
+            renderTurn();
+            startGameTimer();
+            return;
+        case "word_accepted":
+            state.log.push({ entry: message.entry, playerId: message.playerId });
+            renderLog();
+            return;
+        case "word_rejected": {
+            const player = state.players.find((p) => p.id === message.playerId);
+            if (player) player.hp = message.hp;
+            renderGameRoster();
+            const name = player ? player.nickname : "누군가";
+            setGameStatus(`${name}: ${message.reason} (-${message.damage})`);
+            flashDefeatless(message.playerId);
+            return;
+        }
+        case "player_defeated": {
+            const slot = document.getElementById(`mp-character-${message.playerId}`);
+            if (slot) slot.classList.add("defeated");
+            return;
+        }
+        case "game_over":
+            stopGameTimer();
+            showGameOver(message.winnerId);
+            return;
+        case "error":
+            if (state.phase === "playing" || document.getElementById("screenGame").classList.contains("active")) {
+                setGameStatus(message.message);
+            } else if (document.getElementById("screenLobby").classList.contains("active")) {
+                el("lobbyStatus").textContent = message.message;
+                el("lobbyStatus").classList.add("error");
+            } else {
+                setConnectStatus(message.message, true);
+            }
+            return;
+        default:
+            return;
+    }
+}
+
+/* ============================================================
+   대기실 렌더링
+   ============================================================ */
+
+function myPlayer() {
+    return state.players.find((p) => p.id === state.selfId) || null;
+}
+
+function renderLobby() {
+    el("lobbyRoomCode").textContent = state.code || "------";
+    el("lobbyPlayerCount").textContent = `${state.players.length} / 8 명`;
+
+    const grid = el("lobbyCharacterGrid");
+    grid.innerHTML = state.players
+        .map((player) => {
+            const color = paletteColorOf(player.color.hex);
+            const badges = [
+                player.isHost ? '<span class="character-badge host">방장</span>' : "",
+                player.ready ? '<span class="character-badge ready">준비완료</span>' : "",
+            ].join("");
+            return `
+                <div class="character-slot ${player.ready ? "ready" : ""}" id="mp-lobby-${player.id}">
+                    <div class="character-name">${escapeHtml(player.nickname)}</div>
+                    <div class="character-badges">${badges}</div>
+                    <div class="character-rig" style="--character-color: ${color.hex}; --character-eye-color: ${color.eyeColor};">
+                        <div class="character-body">
+                            <span class="character-eye left"></span>
+                            <span class="character-eye right"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+
+    const paletteRow = el("colorPaletteRow");
+    const others = new Set(state.players.filter((p) => p.id !== state.selfId).map((p) => p.color.hex));
+    paletteRow.innerHTML = CHARACTER_PALETTE.map((color) => {
+        const mine = myPlayer()?.color.hex === color.hex;
+        const taken = !mine && !isColorAvailable(color.hex, others);
+        const cls = ["color-swatch", mine ? "mine" : "", taken ? "taken" : ""].filter(Boolean).join(" ");
+        return `<button class="${cls}" style="background:${color.hex}" data-hex="${color.hex}" ${taken ? "disabled" : ""}></button>`;
+    }).join("");
+    for (const swatch of paletteRow.querySelectorAll(".color-swatch:not(.taken)")) {
+        swatch.addEventListener("click", () => send({ type: "set_color", hex: swatch.dataset.hex }));
+    }
+
+    const ready = myPlayer()?.ready ?? false;
+    el("readyToggleButton").textContent = ready ? "준비 취소" : "준비 완료";
+
+    const isHost = state.selfId === state.hostId;
+    const startButton = el("startGameButton");
+    startButton.style.display = isHost ? "inline-block" : "none";
+    startButton.disabled = state.players.length < 2;
+}
+
+el("readyToggleButton").addEventListener("click", () => {
+    const ready = myPlayer()?.ready ?? false;
+    send({ type: "set_ready", ready: !ready });
+});
+el("startGameButton").addEventListener("click", () => send({ type: "start_game" }));
+el("leaveLobbyButton").addEventListener("click", leaveRoom);
+el("leaveGameButton").addEventListener("click", leaveRoom);
+
+function leaveRoom() {
+    send({ type: "leave_room" });
+    stopGameTimer();
+    if (ws) ws.close();
+    state.code = null;
+    showScreen("screenConnect");
+    setConnectStatus("", false);
+}
+
+/* ============================================================
+   게임 화면 렌더링
+   ============================================================ */
+
+function renderGameRoster() {
+    const stage = el("gameCharacterStage");
+    stage.innerHTML = state.players
+        .map((player) => {
+            const color = paletteColorOf(player.color.hex);
+            const ratio = Math.max(0, Math.min(1, player.hp / (player.maxHp || 100)));
+            const fillClass = ratio <= 0.2 ? "low" : ratio <= 0.5 ? "mid" : "";
+            const turnMark = player.id === state.currentPlayerId ? " ▶" : "";
+            return `
+                <div class="character-slot ${player.alive ? "" : "defeated"}" id="mp-character-${player.id}">
+                    <div class="character-name">${escapeHtml(player.nickname)}${turnMark}</div>
+                    <div class="character-rig" style="--character-color: ${color.hex}; --character-eye-color: ${color.eyeColor};">
+                        <div class="character-body">
+                            <span class="character-eye left"></span>
+                            <span class="character-eye right"></span>
+                        </div>
+                    </div>
+                    <div class="character-hp-track">
+                        <div class="character-hp-fill ${fillClass}" style="width:${ratio * 100}%"></div>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+}
+
+function renderTurn() {
+    el("gameTurnLabel").textContent = `턴 ${state.turn}`;
+    const player = state.players.find((p) => p.id === state.currentPlayerId);
+    const isMine = state.currentPlayerId === state.selfId;
+    el("gameTurnPlayerLabel").textContent = isMine ? "내 턴" : `${player ? player.nickname : "?"} 턴`;
+    const word = state.currentWord?.word || "";
+    el("gameCurrentWord").innerHTML = word
+        ? `${escapeHtml(word.slice(0, -1))}<span class="match-hint-char">${escapeHtml(word.slice(-1))}</span>`
+        : "";
+    el("gameInput").disabled = !isMine;
+    el("gameSubmitButton").disabled = !isMine;
+    if (isMine) {
+        el("gameInput").value = "";
+        el("gameInput").focus();
+    }
+    renderGameRoster();
+}
+
+function setGameStatus(message) {
+    el("gameStatus").textContent = message || "";
+}
+
+function flashDefeatless(playerId) {
+    const slot = document.getElementById(`mp-character-${playerId}`);
+    if (!slot) return;
+    slot.style.filter = "brightness(1.6) saturate(1.4)";
+    setTimeout(() => { slot.style.filter = ""; }, 260);
+}
+
+function renderLog() {
+    const logEl = el("gameLog");
+    logEl.innerHTML = state.log
+        .map(({ entry }) => `<span class="match-log-word" title="${escapeHtml(entry.lore || "")}">${escapeHtml(entry.word)}</span>`)
+        .join("");
+    logEl.scrollLeft = logEl.scrollWidth;
+}
+
+function startGameTimer() {
+    stopGameTimer();
+    const fill = el("gameTimerFill");
+    const step = () => {
+        const remaining = state.deadlineTs - Date.now();
+        const ratio = Math.max(0, Math.min(1, remaining / state.durationMs));
+        fill.style.transform = `scaleX(${ratio})`;
+        fill.classList.toggle("urgent", ratio < 0.3);
+        state.timerRaf = requestAnimationFrame(step);
+    };
+    state.timerRaf = requestAnimationFrame(step);
+}
+function stopGameTimer() {
+    if (state.timerRaf) cancelAnimationFrame(state.timerRaf);
+    state.timerRaf = null;
+}
+
+function submitWord() {
+    const input = el("gameInput");
+    const word = input.value.trim();
+    if (!word || state.currentPlayerId !== state.selfId) return;
+    send({ type: "submit_word", word });
+    input.value = "";
+    input.focus();
+}
+el("gameSubmitButton").addEventListener("click", submitWord);
+el("gameInput").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") submitWord();
+});
+
+function showGameOver(winnerId) {
+    const winner = state.players.find((p) => p.id === winnerId);
+    const isMe = winnerId === state.selfId;
+    el("gameInput").disabled = true;
+    el("gameSubmitButton").disabled = true;
+    el("gameResult").innerHTML = `
+        <div class="match-result">
+            <h3>${winnerId ? (isMe ? "승리했습니다!" : `${escapeHtml(winner ? winner.nickname : "상대")} 승리`) : "무승부"}</h3>
+            <button class="ghost-button" id="backToLobbyButton">나가기</button>
+        </div>
+    `;
+    document.getElementById("backToLobbyButton").addEventListener("click", leaveRoom);
+}
+
+/* ---------- 방 코드 복사 ---------- */
+el("roomCodeBox").addEventListener("click", async () => {
+    if (!state.code) return;
+    try {
+        await navigator.clipboard.writeText(state.code);
+        el("lobbyStatus").textContent = "방 코드를 복사했습니다.";
+        el("lobbyStatus").classList.remove("error");
+    } catch {
+        /* 클립보드 권한이 없으면 조용히 무시 — 코드는 화면에 이미 크게 보인다. */
+    }
+});
+
+function escapeHtml(text) {
+    return String(text ?? "").replace(/[&<>"']/gu, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[ch]));
+}
+</script>
+
+</body>
+</html>
