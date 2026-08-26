@@ -2433,9 +2433,13 @@ async function handlePlayerTimeout(turnDurationSecondsFn) {
     document.getElementById("matchInput").disabled = true;
     document.getElementById("matchSubmit").disabled = true;
 
+    // 라운드 전환 전체(피격 연출 + 리셋 + 재배열 + 다음 라운드 시작)를 이 시각
+    // 기준으로 여유 있게 페이싱한다 — "정신없다, 한 5초 정도로" 요구사항.
+    const transitionStart = performance.now();
+
     const { paceSpeedRatio } = await getPaceModule();
     if (match !== session) return;
-    const { damageForTurn } = await getHealthModule();
+    const { damageForTurn, ROUND_TRANSITION_MS } = await getHealthModule();
     if (match !== session) return;
 
     const damage = damageForTurn(match.turn);
@@ -2453,7 +2457,19 @@ async function handlePlayerTimeout(turnDurationSecondsFn) {
         return;
     }
 
-    await resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio);
+    await resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio, transitionStart, ROUND_TRANSITION_MS);
+}
+
+/**
+ * transitionStart(타임아웃이 발생한 시각)로부터 roundTransitionMs * ratio 시점까지
+ * 남은 시간만큼 기다린다. 피격 연출이 이미 그 시점을 넘겨버렸으면(대미지가 아주 커서
+ * heavy 히트가 오래 걸린 경우 등) 아주 짧게만 쉬고 넘어간다 — 무리하게 시간을
+ * 맞추려 들지 않고, 최소한의 여유만 보장한다.
+ */
+async function pacedWait(transitionStart, roundTransitionMs, ratio) {
+    const targetElapsed = roundTransitionMs * ratio;
+    const elapsed = performance.now() - transitionStart;
+    await sleep(Math.max(150, targetElapsed - elapsed));
 }
 
 /**
@@ -2461,8 +2477,16 @@ async function handlePlayerTimeout(turnDurationSecondsFn) {
  * 재배열 모션이 끝난 뒤에야 다음 라운드가 시작된다("대미지 및 사망 모션이
  * 끝나고 재배열 모션, 그리고 새로운 라운드 시작"). 타임아웃으로 라운드를
  * 날린 쪽은 그 턴을 "쓴" 것으로 치고, 다음 라운드는 상대(AI) 턴부터 시작한다.
+ * 전체 과정은 pacedWait 으로 여유 있게 늘여서 약 ROUND_TRANSITION_MS(기본 5초)에
+ * 걸치도록 한다.
  */
-async function resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio) {
+async function resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRatio, transitionStart, roundTransitionMs) {
+    setStatus("라운드 종료! 잠시 후 새 단어로 다시 시작합니다…");
+
+    // 결과(피격 이펙트, 체력 변화)를 충분히 보여줄 시간을 준 뒤에야 새 단어를 고른다.
+    await pacedWait(transitionStart, roundTransitionMs, 0.55);
+    if (match !== session) return;
+
     const handle = await getDictionaryHandle();
     if (match !== session) return;
     const starter = handle.dictionary.randomStartWord();
@@ -2483,6 +2507,11 @@ async function resetRoundForTimeout(session, turnDurationSecondsFn, paceSpeedRat
     await playReorderByHp();
     if (match !== session) return;
 
+    // 재배열까지 끝난 새 라운드를 잠깐 눈에 담을 시간을 준 뒤에야 다음 턴으로 넘어간다.
+    await pacedWait(transitionStart, roundTransitionMs, 1);
+    if (match !== session) return;
+
+    setStatus("");
     document.getElementById("matchTurnLabel").textContent = "AI 턴 · 생각 중…";
     match.phase = "ai";
     void runAiTurn(turnDurationSecondsFn, paceSpeedRatio);
@@ -2661,9 +2690,9 @@ const modalTemplates = {
                 </div>
 
                 <p class="lookup-hint">
-                    등록된 사전에서 이 글자를 포함하는 단어를 즉시 모두 보여주고,
-                    입력한 단어 자체가 등록되어 있지 않으면 위키백과·원신 위키·
-                    위키낱말사전에서 실시간으로 실재 여부를 추가로 확인합니다.
+                    등록된 사전(국립국어원 우리말샘 기반)에서 이 글자를 포함하는 단어를
+                    즉시 모두 보여주고, 입력한 단어 자체가 등록되어 있지 않으면
+                    원신 위키·위키낱말사전에서 실시간으로 실재 여부를 추가로 확인합니다.
                 </p>
 
                 <!-- 정확히 일치하는 단어의 사용 가능 여부 — 로컬에 없으면 온라인 확인이

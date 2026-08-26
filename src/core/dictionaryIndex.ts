@@ -127,19 +127,15 @@ export class DictionaryIndex {
   }
 
   /**
-   * 대전 시작 단어를 뽑는다. 사전 전체를 그대로 무작위로 뽑으면 원신/신화/악마학
-   * 같은 고유명사류 소스가 절대다수라(일반 어휘보다 훨씬 많음) 시작 단어가
-   * 고유명사에 심하게 치우친다. 두 풀(일반명사/고유명사)을 반반 확률로 골라
-   * "고유명사가 일반명사보다 많아지지 않도록" 강제한다 — 둘 중 한쪽이 비어 있으면
-   * 나머지 쪽에서만 뽑는다.
+   * 대전 시작 단어를 뽑는다. "시작 단어는 한국어 보통명사 중 하나로 무조건"
+   * 요구사항대로, 일반 어휘(korean_dict) 풀에서만 뽑는다 — 원신/신화/악마학
+   * 같은 고유명사류는 시작 단어 후보에서 아예 제외한다. 그 풀이 텅 비어
+   * 있을 때만(사전이 극단적으로 작을 때 등) 고유명사 풀로 대체한다.
    */
   randomStartWord(): DictionaryEntry | undefined {
     const hasCommon = this.commonNouns.length > 0;
-    const hasProper = this.properNouns.length > 0;
-    if (!hasCommon && !hasProper) return undefined;
-
-    const pickFromCommon = hasCommon && (!hasProper || Math.random() < 0.5);
-    const pool = pickFromCommon ? this.commonNouns : this.properNouns;
+    const pool = hasCommon ? this.commonNouns : this.properNouns;
+    if (pool.length === 0) return undefined;
     return pool[Math.floor(Math.random() * pool.length)];
   }
 

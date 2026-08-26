@@ -12,7 +12,14 @@
 import type { DictionaryEntry } from '../core/types.js';
 import type { DictionaryIndex } from '../core/dictionaryIndex.js';
 import { turnDurationSeconds, paceSpeedRatio } from '../game/pace.js';
-import { damageForTurn, hitPlan, estimateHitSequenceMs, DEATH_SEQUENCE_MS, MAX_HP } from '../game/health.js';
+import {
+  damageForTurn,
+  hitPlan,
+  estimateHitSequenceMs,
+  DEATH_SEQUENCE_MS,
+  ROUND_TRANSITION_MS,
+  MAX_HP,
+} from '../game/health.js';
 import { pickRandomAvailableColor, isColorAvailable, type PaletteColor } from '../game/characterColor.js';
 import type { PlayerView, RoomPhase, ServerMessage } from './protocol.js';
 
@@ -240,7 +247,10 @@ export class Room {
       return;
     }
 
-    this.onScheduleTimer(delay, () => {
+    // 살아남았을 때만 "라운드 전환" 페이싱을 적용한다 — 피격 연출 자체가 짧아도
+    // (light 히트 등) 최소 ROUND_TRANSITION_MS(기본 5초)는 두고 다음 라운드로
+    // 넘어간다("정신없다, 여유를 가지고 한 5초 정도로" 요구사항).
+    this.onScheduleTimer(Math.max(delay, ROUND_TRANSITION_MS), () => {
       if (!this.resetRound()) return; // 사전이 비어 더 이상 시작 단어가 없으면 여기서 게임 종료.
       this.advanceTurnOrder();
       this.beginTurn();
@@ -308,12 +318,21 @@ export class Room {
   }
 }
 
-const FAILURE_REASON: Record<string, string> = {
+/**
+ * 실패 코드 -> 사용자에게 보여줄 한국어 문구. server.ts 가 submitWord 의
+ * 실패 결과(제출한 사람에게만 보낼 에러)를 문구로 바꿀 때도 이걸 그대로 쓴다
+ * — 문구를 두 곳에서 따로 관리하지 않게.
+ */
+export const SUBMIT_FAILURE_REASON: Record<SubmitFailureCode, string> = {
+  not_your_turn: '지금은 당신의 차례가 아닙니다.',
   invalid_word: '너무 짧은 단어입니다.',
   unknown_word: '사전에 없는 단어입니다.',
   already_used: '이미 사용한 단어입니다.',
   not_chained: '끝말이 이어지지 않습니다.',
   one_shot_blocked: '한방단어는 허용되지 않습니다.',
+};
+
+const FAILURE_REASON: Record<'timeout', string> = {
   timeout: '시간 초과!',
 };
 

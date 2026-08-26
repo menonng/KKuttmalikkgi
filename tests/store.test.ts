@@ -93,7 +93,7 @@ describe('DictionaryIndex.search (포함 검색)', () => {
   });
 });
 
-describe('DictionaryIndex.randomStartWord (일반명사/고유명사 균형)', () => {
+describe('DictionaryIndex.randomStartWord (시작 단어는 무조건 보통명사)', () => {
   function properEntry(word: string): DictionaryEntry {
     return { ...entry(word), sources: ['genshin'] };
   }
@@ -101,22 +101,18 @@ describe('DictionaryIndex.randomStartWord (일반명사/고유명사 균형)', (
     return { ...entry(word), sources: ['korean_dict'] };
   }
 
-  it('고유명사만 압도적으로 많아도 일반명사가 최소 절반 확률로 뽑힌다', () => {
+  it('고유명사가 훨씬 많아도 시작 단어는 항상 일반명사만 뽑는다', () => {
     const heavilyProper = DictionaryStore.fromEntries([
       ...Array.from({ length: 50 }, (_, i) => properEntry(`고유${i}`)),
       commonEntry('사과'),
     ]);
 
-    let commonCount = 0;
-    for (let i = 0; i < 400; i += 1) {
-      if (heavilyProper.randomStartWord()?.word === '사과') commonCount += 1;
+    for (let i = 0; i < 100; i += 1) {
+      expect(heavilyProper.randomStartWord()?.word).toBe('사과');
     }
-    // 이론상 50%. 400회 시행에서 충분히 넓은 허용 범위(30~70%)로 판정한다.
-    expect(commonCount).toBeGreaterThan(120);
-    expect(commonCount).toBeLessThan(280);
   });
 
-  it('한쪽 풀이 비어 있으면 나머지 풀에서만 뽑는다', () => {
+  it('일반명사 풀이 비어 있으면(예외적으로) 고유명사 풀로 대체한다', () => {
     const onlyProper = DictionaryStore.fromEntries([properEntry('원신단어')]);
     expect(onlyProper.randomStartWord()?.word).toBe('원신단어');
 

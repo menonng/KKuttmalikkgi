@@ -99,8 +99,10 @@ async function main() {
     await page.waitForSelector('#dictionaryExactResult .lookup-badge.warn', { timeout: 5_000 });
     console.log('✓ 형식 오류(ㄱ) 즉시 거부');
 
-    // 3) 시드/코퍼스 어디에도 없는, 실재하는 인물 — 온라인 환경이면 위키 검색으로
-    //    새로 확인(origin=online)돼야 한다. data/seeds 에 없는지 미리 확인한 단어다.
+    // 3) 시드/코퍼스 어디에도 없는, 실재하는 인물 — 온라인 환경이면 원신 위키/
+    //    위키낱말사전 검색으로 새로 확인(origin=online)될 수 있다(위키백과는 더 이상
+    //    프로바이더에 없으므로 "확인 안 됨"으로 귀결돼도 실패로 보지 않는다).
+    //    data/seeds 에 없는지 미리 확인한 단어다.
     await page.fill('#dictionaryInput', '페르세포네');
     await page.click('#dictionarySearchButton');
     await page.waitForSelector('#dictionaryExactResult .lookup-card', { timeout: 20_000 });
@@ -111,7 +113,7 @@ async function main() {
         resultText.includes('실시간 검색으로 확인됨'),
         `빌드된 사전에 없는 단어인데 origin 이 online 이 아님: ${resultText}`,
       );
-      console.log('✓ 온라인 환경: 위키 검색으로 미등록 단어(페르세포네) 신규 확인됨');
+      console.log('✓ 온라인 환경: 실시간 검색으로 미등록 단어(페르세포네) 신규 확인됨');
     } else {
       console.log('△ 오프라인/차단 환경: 온라인 검색이 실패해 unknown 으로 귀결됨(허용)');
     }

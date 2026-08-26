@@ -5,22 +5,25 @@
  * 그대로 로드해서 쓸 수 있도록, 이 파일이 가져오는 것은 전부 node: 의존이 없다.
  *
  * 조회 순서(우선순위):
- *   1. 빌드된 정식 사전(dictionary.json) — 있으면 즉시 확정
+ *   1. 빌드된 정식 사전(dictionary.json) — 있으면 즉시 확정. 여기 들어가는 일반
+ *      어휘는 국립국어원(우리말샘) 이 원 출처다(src/sources/koreanDict.ts).
  *   2. 원신 팬덤 위키 — 게임 캐릭터/지역
- *   3. 한국어 위키백과 — 역사·신화·악마·인물·작품 등(문서 요약이 lore 태그로 자동 분류됨)
- *   4. 한국어 위키낱말사전 — 그 외 일반 어휘의 최종 폴백
+ *   3. 한국어 위키낱말사전 — 그 외 일반 어휘의 최종 폴백
  *
- * 국어사전 오픈 API 는 키가 필요해 브라우저에 노출할 수 없으므로 포함하지 않는다.
- * (서버 사이드는 src/service/server.ts 의 createServerResolver 를 쓴다.)
+ * 한국어 위키백과는 쓰지 않는다("단어는 위키피디아에서 찾아보지 마" 요구사항).
+ * 국립국어원 오픈 API(우리말샘) 와 네이버 국어사전은 둘 다 인증 키가 필요한데,
+ * 그 키를 브라우저 JS 에 그대로 넣으면 누구나 훔쳐 쓸 수 있어 노출할 수 없고
+ * (server.ts 는 서버 프로세스에만 있는 환경변수로 안전하게 넘긴다), 네이버 쪽은
+ * 설령 키를 넘긴다 해도 브라우저에서 임의 출처로의 요청을 허용하는 CORS 헤더가
+ * 없어 직접 fetch 자체가 막힌다 — 그래서 실시간 온라인 확인은 정식 사전에
+ * 없는 단어에 한해 원신 위키 + 위키낱말사전(둘 다 CORS 를 여는 MediaWiki API)
+ * 으로만 한다. "국립국어원 위주"는 정식 사전(dictionary.json) 자체를 국립국어원
+ * 데이터로 채우는 쪽(빌드 시점)에서 지킨다.
  */
 import { DictionaryResolver } from './resolver.js';
 import { BrowserResolutionCache } from './cache.js';
 import { BrowserDictionary } from './browserStore.js';
-import {
-  genshinFandomProvider,
-  koreanWikipediaProvider,
-  koreanWiktionaryProvider,
-} from './providers/mediawiki.js';
+import { genshinFandomProvider, koreanWiktionaryProvider } from './providers/mediawiki.js';
 import type { LearnHandler } from './types.js';
 
 export interface BrowserResolverOptions {
@@ -64,11 +67,7 @@ export async function createBrowserResolver(
 
   const resolver = new DictionaryResolver({
     dictionary,
-    providers: [
-      genshinFandomProvider(options.fetchImpl),
-      koreanWikipediaProvider(options.fetchImpl),
-      koreanWiktionaryProvider(options.fetchImpl),
-    ],
+    providers: [genshinFandomProvider(options.fetchImpl), koreanWiktionaryProvider(options.fetchImpl)],
     cache: new BrowserResolutionCache(),
     onLearn,
   });

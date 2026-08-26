@@ -48,9 +48,10 @@ export function hitPlan(damage: number): HitPlan {
   const clamped = Math.max(0, Math.min(HEALTH_MAX_DAMAGE, damage));
 
   if (clamped <= HEALTH_HEAVY_HIT_THRESHOLD) {
-    // 10 -> 3회/약 190ms 간격, 20 -> 5회/약 100ms 간격 (커질수록 더 빠르고 더 많이).
+    // 10 -> 3회/약 280ms 간격, 20 -> 5회/약 220ms 간격 — "정신없지 않게, 망치 속도를
+    // 전구간에서 줄여" 요구사항으로 예전(190ms~100ms)보다 전체적으로 느리게 늦췄다.
     const hits = Math.max(1, Math.round(clamped / 4));
-    const intervalMs = Math.max(70, 220 - clamped * 6);
+    const intervalMs = Math.max(160, 340 - clamped * 6);
     return { heavy: false, hits, intervalMs, amplitude: 1 };
   }
 
@@ -72,13 +73,23 @@ export const DEATH_SEQUENCE_MS = 1_420;
  * 시작을 늦춘다 — 그래야 모든 참가자 화면에서 연출이 끝난 뒤 다음 라운드가
  * 시작된다("라운드 종료 후 연출이 모두 진행된 뒤 새 라운드" 요구사항).
  */
-/** heavy 타격 최소 재생 시간(ms) — "20점을 넘어가면 모션 하나에 1초 이상". */
-export const HEAVY_HIT_MIN_MS = 1_000;
+/** heavy 타격 최소 재생 시간(ms) — "20점을 넘어가면 모션 하나에 1초 이상"
+ *  이면서 "망치 속도를 전구간에서 줄여" 요구사항으로 예전(1000ms)보다 더 늦췄다. */
+export const HEAVY_HIT_MIN_MS = 1_400;
 /** amplitude 가 커질수록(대미지가 클수록) 최소치 위로 더 늘어나는 폭(ms). */
-export const HEAVY_HIT_AMPLITUDE_MS = 500;
+export const HEAVY_HIT_AMPLITUDE_MS = 700;
 
 export function estimateHitSequenceMs(plan: HitPlan): number {
   if (!plan.heavy) return plan.hits * plan.intervalMs;
-  // amplitude 는 1(대미지 21) ~ 2.8(대미지 50) 범위 -> 1000ms ~ 1900ms.
+  // amplitude 는 1(대미지 21) ~ 2.8(대미지 50) 범위 -> 1400ms ~ 2660ms.
   return HEAVY_HIT_MIN_MS + (plan.amplitude - 1) * HEAVY_HIT_AMPLITUDE_MS;
 }
+
+/**
+ * 타임아웃으로 라운드가 끝난 뒤, 다음 라운드가 시작되기까지의 목표 전체 시간(ms).
+ * "라운드 전환이 정신없다 — 여유를 가지고 한 5초 정도로" 요구사항 대응. 실제 피격
+ * 연출이 이보다 짧으면 나머지를 결과를 보여주는 여유 시간으로 채우고, 이보다 길면
+ * (예: 대미지가 아주 큰 heavy 히트) 최소한의 여유만 두고 넘어간다 — web/index.html
+ * 의 resetRoundForTimeout, room.ts 의 handleTimeout 이 이 값을 기준으로 대기한다.
+ */
+export const ROUND_TRANSITION_MS = 5_000;

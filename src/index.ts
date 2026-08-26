@@ -28,10 +28,15 @@ export { chooseAiMove, type Difficulty, type AiMoveOptions } from './game/ai.js'
 export {
   damageForTurn,
   hitPlan,
+  estimateHitSequenceMs,
   HEALTH_BASE_DAMAGE,
   HEALTH_DAMAGE_STEP,
   HEALTH_MAX_DAMAGE,
   HEALTH_HEAVY_HIT_THRESHOLD,
+  HEAVY_HIT_MIN_MS,
+  HEAVY_HIT_AMPLITUDE_MS,
+  DEATH_SEQUENCE_MS,
+  ROUND_TRANSITION_MS,
   MAX_HP,
   type HitPlan,
 } from './game/health.js';
