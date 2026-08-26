@@ -45,6 +45,7 @@ jobs:
         run: |
           mkdir -p site/dist site/data
           cp web/index.html site/index.html
+          cp web/multiplayer.html site/multiplayer.html
           cp -r dist/. site/dist/
           cp data/dist/dictionary.json site/data/dictionary.json
 
