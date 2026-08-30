@@ -286,9 +286,16 @@ store.isDeadEnd('음악');                  // 한방단어 판정
 
 ```
 빌드된 사전 조회 → (없으면) 조회 캐시 → (없으면) 온라인 프로바이더를 우선순위 순으로 검색
-  genshin(10) → wikipedia(80) → wiktionary(95)   [브라우저]
-  genshin(10) → wikipedia(80) → wiktionary(95) → korean_dict API(90)   [서버, 키가 있을 때]
+  genshin(10) → wiktionary(95)                             [브라우저]
+  genshin(10) → korean_dict API(90, 키 있을 때) → wiktionary(95)   [서버]
 ```
+
+한국어 위키백과는 프로바이더에 없다("단어는 위키피디아에서 찾아보지 마" — 실시간 확인은
+원신 위키·위키낱말사전, 그리고 서버 쪽은 우리말샘(국립국어원)까지). 우리말샘·네이버 국어사전
+API 는 둘 다 인증 키가 필요한데 브라우저 JS 에 키를 그대로 두면 노출되므로, 브라우저
+리졸버에는 절대 넣지 않는다(서버 프로세스 환경변수로만 전달). 네이버 쪽은 설령 키를
+서버에 둔다 해도 공식 API가 브라우저 직접 호출을 위한 CORS 를 열어 주지 않아 클라이언트
+쪽 프로바이더로는 애초에 못 쓴다.
 
 프로바이더는 **정확히 그 표기의 문서가 존재할 때만** 인정한다(제목 직접 조회 →
 안 되면 검색 후 제목이 정규화 후 정확히 일치하는 것만) — 비슷한 단어로 오탐하지 않는다.
@@ -349,8 +356,7 @@ GET  /api/dictionary                    dictionary.json 그대로 서빙
 
 ## AI 대전 — 턴 페이스 엔진
 
-`web/index.html` 의 AI MODE 는 실제로 동작하는 1인용 대전이다(멀티플레이는 의도적으로
-가장 나중에 구현한다). 난이도를 고르면 사전에서 무작위 시작 단어를 뽑아 플레이어와
+`web/index.html` 의 AI MODE 는 실제로 동작하는 1인용 대전이다. 난이도를 고르면 사전에서 무작위 시작 단어를 뽑아 플레이어와
 AI(`src/game/ai.ts`)가 번갈아 잇는다 — 단어 판정은 위 사전 조회 API 의 `validateTurn()`
 을 그대로 쓴다(한 글자 단어는 검증 규칙의 `minLength: 2` 로 항상 거부된다).
 
@@ -392,6 +398,52 @@ npx tsx src/cli.ts build --incremental
 
 HTTP 응답도 `data/cache/http/` 에 캐시되므로(기본 TTL 7일),
 같은 크롤링을 반복해도 네트워크를 다시 때리지 않는다.
+
+---
+
+## 실제로 수십만 단어를 모으려면
+
+이 저장소에 커밋된 `data/corpus/korean-words.sample.tsv` 는 예시용 소량 데이터다
+(실존하는 단어를 직접 하나씩 확인해 손으로 적은 것이라 규모에 한계가 있다 —
+사전 단어를 지어내지 않는다는 원칙 때문에 이 파일 자체를 부풀리는 방식으로는
+"수십만"에 도달할 수 없다). 실제로 그 규모에 도달하는 경로는 두 가지다.
+
+**1. 우리말샘 전체 음절 스윕(이미 구현됨, 키만 있으면 됨)**
+
+`korean_dict` 소스의 `sweepAllSyllables: true` (기본 켜짐, `config/builder.config.json`)
+는 완성형 한글 음절 가~힣 11,172개를 전부 우리말샘 검색 API 질의어로 써서 훑는다.
+필요한 건 단 하나 — [opendict.korean.go.kr](https://opendict.korean.go.kr) 에서 무료로
+발급받은 키를 저장소 시크릿 `KOREAN_DICT_API_KEY` 로 등록하는 것뿐이다.
+
+```bash
+# 로컬에도, GitHub Actions 시크릿에도 등록 가능:
+KOREAN_DICT_API_KEY=발급받은키 npx tsx src/cli.ts build --online
+```
+
+주의할 점:
+- 음절 수 × 페이지 수만큼 요청이 나간다(`perQuery: 1000` 이면 음절당 최대 10페이지,
+  전체 최악 111,720회). `http.rateLimitMs`(150ms) 간격을 지키므로 처음 한 번은 몇 시간
+  걸릴 수 있다 — GitHub Actions 에서 `workflow_dispatch` 로 수동 실행해 몰아서 돌리는
+  걸 권장한다. 이후로는 `.github/workflows/dictionary.yml` 의 매주 스케줄이
+  `--incremental` 로 이미 캐시된 요청(`data/cache/http/`, TTL 7일)은 건너뛰고 새로
+  바뀐 부분만 갱신한다.
+- 이 저장소를 다루는 이 세션(Claude Code) 자체는 조직 네트워크 정책으로
+  `opendict.korean.go.kr` 에 직접 접속할 수 없다(egress 차단, 403). 그래서 이 스윕은
+  이 세션이 대신 실행해 줄 수 없고, 실제 인터넷이 열려 있는 GitHub Actions 러너나
+  사용자의 로컬 환경에서 키와 함께 실행해야 한다.
+- `q=` 파라미터의 정확한 매칭 방식(완전 일치 vs 포함 검색)은 국립국어원 공식 문서로
+  직접 확인해 보는 걸 권장한다 — 이 코드는 문서화되지 않은 부분을 추측하지 않고
+  기본 요청 방식 그대로 음절을 보낸다.
+
+**2. 국립국어원 우리말샘 전체 덤프 파일을 직접 넣기(더 빠름, 네트워크 불필요)**
+
+국립국어원은 종종 우리말샘 전체를 XML/CSV 로 벌크 다운로드할 수 있게 제공한다
+(모두의말뭉치/언어정보나눔터 등). 그런 파일을 구할 수 있다면, 페이지네이션 API 를
+수만 번 두드릴 필요 없이 `data/corpus/korean-words.tsv`("단어\t뜻풀이" 형식, 이
+파일은 `.gitignore` 에 있어 저장소 크기와 무관하게 얼마든지 커도 된다)로 변환해
+넣기만 하면 된다 — 이후 완전히 오프라인으로 `npm run dict:build` 만 돌려도 그
+전체가 즉시 반영된다. 이 세션은 그런 벌크 파일을 직접 내려받을 수 없으니, 사용자가
+파일을 구해서 올려 주면 형식 변환(TSV 화)까지는 바로 도와줄 수 있다.
 
 ---
 
@@ -475,30 +527,65 @@ data/
   cache/                     HTTP 캐시 + 증분 수집 결과 (gitignore)
   dist/                      빌드 산출물 (gitignore)
 src/
-  core/                      정규화·검증·병합·lore·증분·내보내기·런타임 스토어
-  net/                       HTTP 캐시, MediaWiki 클라이언트
+  core/                      정규화·검증·병합·lore·증분·내보내기·런타임 스토어·두음법칙(hangul.ts)
+  net/                       HTTP 캐시, MediaWiki/우리말샘 포맷 유틸
   sources/                   소스 9종 + 인터페이스/레지스트리
   service/                   실시간 사전 조회 API(리졸버·프로바이더·캐시, 브라우저/서버 공용)
+  game/                      AI 대전 엔진 — 턴 페이스(pace.ts), AI 난이도(ai.ts),
+                             체력/피격 연출 계산(health.ts), 캐릭터 색상 팔레트(characterColor.ts)
+  multiplayer/                서버 권위 방(Room) 상태 머신(room.ts), 프로토콜 타입(protocol.ts),
+                             방 코드(roomCode.ts), 실제 WebSocket 서버(server.ts)
   cli.ts                     빌더 CLI
   httpServer.ts              사전 조회 API 서버 (node:http)
 examples/                    예시 출력 JSON, 소스 추가 예제, 서버 사용 예제
 scripts/                     벤치마크, 예시 생성기, E2E 스모크 테스트
-tests/                       vitest (82 tests)
-web/index.html               게임 사이트 UI — DICTIONARY 창이 사전 조회 API 로 실제 동작함
-.github/workflows/pages.yml  GitHub Pages 배포(빌드+조립+배포)
+tests/                       vitest
+web/
+  index.html                 게임 사이트 UI — DICTIONARY/AI MODE 가 전부 실제로 동작함
+  multiplayer.html            MULTIPLAYER 가 새 창으로 여는 실제 멀티플레이 클라이언트
+                             (src/multiplayer/server.ts 에 WebSocket 으로 접속)
+.github/workflows/
+  pages.yml                  GitHub Pages 배포(빌드+조립+배포, index.html + multiplayer.html 둘 다)
+  dictionary.yml             타입체크·테스트·오프라인 빌드 + 매주 온라인 갱신
 ```
+
+---
+
+## 멀티플레이 서버 배포
+
+`web/multiplayer.html` 은 정적 페이지라 GitHub Pages 에 같이 올라가지만, 실제 게임
+상태를 들고 있는 `src/multiplayer/server.ts` 는 상태를 유지하는 Node 프로세스라
+GitHub Pages(정적 호스팅)에는 올릴 수 없다 — Render, Fly.io, Railway 처럼 지속 실행
+가능한 곳에 **따로** 배포해야 한다.
+
+```bash
+npm run build       # dist/ 컴파일
+npm run dict:build  # data/dist/dictionary.json 생성(서버가 부팅 시 읽음)
+PORT=8787 node dist/multiplayer/server.js
+```
+
+- `PORT` — 리스닝 포트(대부분의 PaaS 가 자동으로 주입한다). 기본 8787.
+- `KKUTTMAL_DIST_DIR` — `dictionary.json` 이 있는 디렉터리. 기본 `data/dist`.
+- `KKUTTMAL_ALLOW_DEAD_END` — `"true"` 로 주면 모든 방에서 한방단어를 기본 허용.
+- 배포 플랫폼 대부분 무료 플랜은 컨테이너를 커밋해 두지 않으므로, 빌드 스텝에
+  `npm ci && npm run build && npm run dict:build` 를, 시작 커맨드에
+  `node dist/multiplayer/server.js` 를 지정하면 된다.
+- 서버가 TLS 뒤에 있으면(플랫폼이 기본 제공하는 `https://` 도메인) 클라이언트는
+  `wss://그주소` 로 접속해야 한다 — `web/multiplayer.html` 대기실 진입 화면의
+  "서버 주소" 입력칸에 그대로 붙여 넣으면 된다(로컬 테스트는 `ws://localhost:8787`).
 
 ---
 
 ## 개발
 
 ```bash
-npm test           # vitest (82 tests)
+npm test           # vitest
 npm run typecheck  # tsc (src + tests + scripts + examples)
-npm run build      # dist/ 로 컴파일 (브라우저가 로드하는 dist/service/browser.js 포함)
+npm run build      # dist/ 로 컴파일 (브라우저가 로드하는 dist/service/browser.js, dist/multiplayer/server.js 포함)
 npm run bench      # 대규모 빌드 벤치마크
 npm run serve      # 사전 조회 API 서버 (http://localhost:8787)
-npm run test:e2e   # 실제 Chromium 으로 DICTIONARY 창 검색까지 검증하는 E2E 스모크 테스트
+node dist/multiplayer/server.js   # 멀티플레이 WebSocket 서버 (build 먼저 필요)
+npm run test:e2e   # 실제 Chromium 으로 DICTIONARY/AI MODE 창까지 검증하는 E2E 스모크 테스트
 ```
 
 `test:e2e` 는 `dict:build` + `build` 산출물을 GitHub Pages 와 동일한 구조로 임시

@@ -24,6 +24,14 @@ import {
 } from '../net/openDictFormat.js';
 import { SeedSource } from './seedSource.js';
 import type { SourceContext } from './types.js';
+import { SYLLABLE_BASE, SYLLABLE_LAST } from '../core/hangul.js';
+
+/** 완성형 한글 음절 가~힣 을 전부 생성한다(11,172개). */
+export function* allHangulSyllables(): Generator<string> {
+  for (let code = SYLLABLE_BASE; code <= SYLLABLE_LAST; code += 1) {
+    yield String.fromCharCode(code);
+  }
+}
 
 /** 우리말샘 오픈 API 응답(JSON 모드) 중 실제로 쓰는 부분만. */
 interface OpenDictResponse {
@@ -50,8 +58,17 @@ export class KoreanDictSource extends SeedSource {
       corpusFiles: ctx.option<string[]>('corpusFiles', ['data/corpus/korean-words.tsv']),
       endpoint: ctx.option<string>('endpoint', DEFAULT_ENDPOINT),
       apiKeyEnv: ctx.option<string>('apiKeyEnv', 'KOREAN_DICT_API_KEY'),
-      /** API 로 훑을 질의어. 보통 자모/음절 단위로 넓게 훑는다. */
+      /** API 로 훑을 질의어. sweepAllSyllables 와 합쳐진다(중복 제거). */
       queries: ctx.option<string[]>('queries', []),
+      /**
+       * true 면 완성형 한글 음절 가~힣 11,172개를 전부 질의어로 써서 우리말샘을
+       * 훑는다 — "수십만 단위" 수집의 핵심 경로. 음절 하나당 최대 perQuery/100
+       * 페이지를 넘겨받으므로, 전체를 다 돌면 요청 수가 아주 많아진다(예:
+       * perQuery=1000 이면 최대 111,720회 — http.rateLimitMs 간격으로 몇 시간
+       * 걸릴 수 있다). 최초 1회는 workflow_dispatch 로 수동 실행해 몰아서 돌리고,
+       * 그 이후로는 --incremental 로 이미 캐시된 요청은 건너뛰는 걸 권장한다.
+       */
+      sweepAllSyllables: ctx.option<boolean>('sweepAllSyllables', false),
       perQuery: ctx.option<number>('perQuery', 1_000),
     };
   }
@@ -89,7 +106,14 @@ export class KoreanDictSource extends SeedSource {
       return;
     }
 
-    for (const query of resolved.queries) {
+    const queries = resolved.sweepAllSyllables
+      ? [...new Set([...resolved.queries, ...allHangulSyllables()])]
+      : resolved.queries;
+    if (resolved.sweepAllSyllables) {
+      ctx.logger.info(`${this.name}: 전체 음절 스윕 — 질의어 ${queries.length}개`);
+    }
+
+    for (const query of queries) {
       yield* this.fetchFromApi(ctx, query, apiKey, resolved.endpoint, resolved.perQuery);
     }
   }

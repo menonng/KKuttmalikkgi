@@ -6,8 +6,8 @@
  * 사전 export 스키마는 건드리지 않고, 인덱스 단계에서만 변형을 사용한다.
  */
 
-const SYLLABLE_BASE = 0xac00;
-const SYLLABLE_LAST = 0xd7a3;
+export const SYLLABLE_BASE = 0xac00;
+export const SYLLABLE_LAST = 0xd7a3;
 const JUNG_COUNT = 21;
 const JONG_COUNT = 28;
 
