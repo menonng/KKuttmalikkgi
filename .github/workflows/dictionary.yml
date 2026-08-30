@@ -33,6 +33,9 @@ jobs:
     name: 온라인 수집으로 사전 갱신
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    # 아래 마지막 스텝이 코퍼스 파일을 이 브랜치에 직접 커밋+푸시하므로 필요하다.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,3 +54,18 @@ jobs:
           name: dictionary-online
           path: data/dist/
           retention-days: 30
+      - name: 온라인 수집 결과를 코퍼스로 내보내 커밋
+        # 이 커밋 없이는 온라인 수집 결과가 이 CI job 안에서만 존재하다 사라진다 —
+        # GitHub Pages 배포(pages.yml)는 항상 오프라인 빌드만 하므로, 이렇게
+        # 저장소에 실제로 커밋해 둬야 배포된 사이트에도 반영된다.
+        run: |
+          node scripts/exportKoreanDictCorpus.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/corpus/korean-words.tsv
+          if git diff --cached --quiet; then
+            echo "변경 없음 — 커밋 생략"
+          else
+            git commit -m "chore(dict): 우리말샘 온라인 수집 결과 갱신 (자동)"
+            git push
+          fi
