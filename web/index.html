@@ -2042,6 +2042,18 @@ function sleep(ms) {
 }
 
 /**
+ * 끝말잇기 입력 창에서 복사/붙여넣기/드래그로 끌어넣기를 전부 막는다 —
+ * 반드시 직접 타이핑해서 내야 한다("복사 및 붙여넣기가 불가능하도록").
+ * 키보드 단축키·마우스 우클릭 메뉴·터치 길게 누르기 전부 결국 이
+ * copy/cut/paste/drop 이벤트로 들어오므로 여기만 막으면 전부 막힌다.
+ */
+function blockClipboard(input) {
+    for (const type of ["paste", "copy", "cut", "drop"]) {
+        input.addEventListener(type, (event) => event.preventDefault());
+    }
+}
+
+/**
  * 피격 연출 한 번. hitPlan 이 정한 대로 20 이하 대미지는 망치로 빠르게 여러 번,
  * 20 초과는 크고 세게 한 번 때린다. 애니메이션이 완전히 끝날 때까지 기다렸다가
  * resolve 한다 — 이걸 기다린 뒤에야 다음 라운드가 시작된다.
@@ -2246,6 +2258,7 @@ function renderMatchScreen() {
     document.getElementById("matchInput").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitMatchWord();
     });
+    blockClipboard(document.getElementById("matchInput"));
 
     applyCharacterColor("player", match.playerColor.hex, match.playerColor.eyeColor);
     applyCharacterColor("ai", match.aiColor.hex, match.aiColor.eyeColor);

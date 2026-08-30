@@ -891,6 +891,11 @@ el("gameInput").addEventListener("keydown", (event) => {
     if (event.key === "Enter") submitWord();
 });
 
+// 반드시 직접 타이핑해서 내야 한다 — 복사/붙여넣기/드래그로 끌어넣기를 막는다.
+for (const type of ["paste", "copy", "cut", "drop"]) {
+    el("gameInput").addEventListener(type, (event) => event.preventDefault());
+}
+
 function showGameOver(winnerId) {
     const winner = state.players.find((p) => p.id === winnerId);
     const isMe = winnerId === state.selfId;
