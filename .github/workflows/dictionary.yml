@@ -33,9 +33,12 @@ jobs:
     name: 온라인 수집으로 사전 갱신
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # 아래 마지막 스텝이 코퍼스 파일을 이 브랜치에 직접 커밋+푸시하므로 필요하다.
+    # contents: write - 아래 마지막 스텝이 코퍼스 파일을 이 브랜치에 직접 커밋+푸시.
+    # actions: write - 그 커밋(기본 GITHUB_TOKEN 사용)은 GitHub 의 무한루프 방지
+    # 정책상 다른 워크플로의 push 트리거를 켜지 못하므로, pages 배포를 API로 직접 켜기 위함.
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -68,4 +71,14 @@ jobs:
           else
             git commit -m "chore(dict): 우리말샘 온라인 수집 결과 갱신 (자동)"
             git push
+            echo "PUSHED=true" >> "$GITHUB_ENV"
           fi
+      - name: GitHub Pages 재배포 트리거
+        # 방금 커밋을 GITHUB_TOKEN 으로 푸시했기 때문에 pages.yml 의 push 트리거가
+        # 자동으로 켜지지 않는다(GitHub 의 워크플로 연쇄 방지 정책) — 그래서
+        # workflow_dispatch API 를 직접 호출해 배포를 켠다.
+        if: env.PUSHED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run pages.yml --ref "${{ github.ref_name }}"
